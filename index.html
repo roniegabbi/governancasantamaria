@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Governança SM — Plataforma de Gestão</title>
+<style>
+:root{
+  --azul:#0b4f8a;--azul-esc:#073b68;--azul-cl:#e8f1fa;--verde:#1d9e75;--verde-cl:#e1f5ee;--verde-esc:#0f6e56;
+  --ambar:#d9932a;--ambar-cl:#faeeda;--ambar-esc:#854f0b;--verm:#d64545;--verm-cl:#fceaea;--verm-esc:#8f2727;
+  --roxo:#6a5acd;--roxo-cl:#eeedfe;--tin:#334155;--tsec:#64748b;--mut:#94a3b8;--bg:#f4f6f9;--card:#fff;--linha:#e5e9f0;--linha2:#eef1f6;--radius:12px;--sombra:0 1px 3px rgba(15,40,80,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--tin);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.hide{display:none!important}
+/* Login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#073b68,#0b4f8a)}
+.login-card{background:#fff;border-radius:16px;padding:34px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.login-card .mk{width:52px;height:52px;border-radius:12px;background:var(--azul-esc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;margin-bottom:16px}
+.login-card h1{font-size:20px;color:#0f2544;font-weight:700}
+.login-card p{font-size:13px;color:var(--tsec);margin-bottom:22px}
+.fld{margin-bottom:14px}
+.fld label{font-size:12px;font-weight:600;color:#3a4a63;display:block;margin-bottom:5px}
+.fld input{width:100%;border:1px solid var(--linha);border-radius:9px;padding:11px 13px;font-size:14px;font-family:inherit}
+.fld input:focus{outline:none;border-color:var(--azul);box-shadow:0 0 0 3px var(--azul-cl)}
+.btn{background:var(--azul);color:#fff;border:none;padding:11px 16px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;gap:7px;align-items:center;justify-content:center}
+.btn:hover{background:var(--azul-esc)}
+.btn.block{width:100%}
+.btn.ghost{background:#fff;color:var(--tin);border:1px solid var(--linha)}
+.btn.sm{padding:6px 11px;font-size:12.5px}
+.msg{font-size:12.5px;padding:9px 12px;border-radius:8px;margin-top:12px}
+.msg.err{background:var(--verm-cl);color:var(--verm-esc)}
+.msg.ok{background:var(--verde-cl);color:var(--verde-esc)}
+/* App */
+.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+.side{background:var(--azul-esc);color:#dfeaf5;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.brand{padding:20px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;gap:11px;align-items:center}
+.brand .mk{width:38px;height:38px;border-radius:9px;background:#fff;color:var(--azul-esc);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+.brand h1{font-size:15px;color:#fff;font-weight:700}
+.brand span{font-size:11px;color:#9fc0e0}
+.nav{padding:12px;flex:1}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:#cfe0f0;font-size:13.5px;font-weight:500;cursor:pointer}
+.nav a .ic{width:16px;text-align:center}
+.nav a:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav a.on{background:var(--azul);color:#fff;font-weight:600}
+.side-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.1)}
+.main{display:flex;flex-direction:column;min-width:0}
+.top{background:#fff;border-bottom:1px solid var(--linha);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.top .crumb b{color:#12213c}
+.top .crumb{font-size:13px;color:var(--tsec)}
+.who{display:flex;align-items:center;gap:10px}
+.who .av{width:34px;height:34px;border-radius:50%;background:var(--azul);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.who .nm{font-size:13px;font-weight:600;line-height:1.1}
+.who .rl{font-size:11px;color:var(--tsec)}
+.wrap{padding:22px 24px 50px}
+.scope{background:var(--roxo-cl);border:1px solid #d9d5f5;border-radius:10px;padding:10px 15px;margin-bottom:18px;font-size:13px;color:#3a327a}
+.view{display:none}.view.on{display:block}
+.ph{margin-bottom:18px}.ph h2{font-size:20px;font-weight:700;color:#0f2544}.ph p{font-size:13px;color:var(--tsec)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid var(--linha);border-radius:var(--radius);padding:15px 16px;box-shadow:var(--sombra)}
+.kpi .k-lbl{font-size:11px;color:var(--tsec);font-weight:600;text-transform:uppercase}
+.kpi .k-val{font-size:25px;font-weight:800;color:#0f2544;margin-top:6px}
+.kpi .k-sub{font-size:11.5px;color:var(--tsec);margin-top:3px}
+.panel{background:#fff;border:1px solid var(--linha);border-radius:var(--radius);box-shadow:var(--sombra);overflow:hidden;margin-bottom:18px}
+.p-head{padding:13px 18px;border-bottom:1px solid var(--linha2);display:flex;align-items:center;justify-content:space-between}
+.p-head h3{font-size:14.5px;font-weight:700;color:#12213c}
+.p-body{padding:8px 18px}
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--linha2)}
+.row:last-child{border:none}
+.row .r-main{flex:1}
+.row .r-t{font-size:13px;font-weight:600;color:#1e2f4d}
+.row .r-s{font-size:11.5px;color:var(--tsec)}
+.tag{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.t-nova{background:var(--azul-cl);color:var(--azul-esc)}.t-recebida{background:var(--roxo-cl);color:#3a327a}
+.t-em_execucao{background:var(--ambar-cl);color:var(--ambar-esc)}.t-concluida{background:var(--verde-cl);color:var(--verde-esc)}
+.t-devolvida{background:var(--verm-cl);color:var(--verm-esc)}.t-cancelada{background:#eee;color:#666}
+.pill{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:#eef1f6;color:#3a4a63}
+.form-inline{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 18px;background:#fafbfd;border-top:1px solid var(--linha2)}
+.form-inline .full{grid-column:1/3}
+.form-inline input,.form-inline select,.form-inline textarea{width:100%;border:1px solid var(--linha);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
+.form-inline textarea{min-height:54px;resize:vertical}
+select{background:#fff}
+.loading{padding:40px;text-align:center;color:var(--tsec);font-size:13px}
+.empty{padding:26px 18px;text-align:center;color:var(--mut);font-size:13px}
+@media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div id="login" class="login-wrap">
+  <div class="login-card">
+    <div class="mk">SM</div>
+    <h1>Governança SM</h1>
+    <p>Plataforma de Gestão — Prefeitura de Santa Maria</p>
+    <form id="loginForm">
+      <div class="fld"><label>E-mail</label><input type="email" id="email" placeholder="voce@sm.gov.br" required></div>
+      <div class="fld"><label>Senha</label><input type="password" id="senha" placeholder="••••••••" required></div>
+      <button class="btn block" type="submit" id="btnLogin">Entrar</button>
+    </form>
+    <div id="loginMsg"></div>
+  </div>
+</div>
+
+<div id="app" class="app hide">
+  <aside class="side">
+    <div class="brand"><div class="mk">SM</div><div><h1>Governança SM</h1><span>Santa Maria</span></div></div>
+    <nav class="nav" id="nav">
+      <a class="on" data-v="painel"><span class="ic">◧</span> Painel</a>
+      <a data-v="demandas"><span class="ic">⇄</span> Demandas</a>
+      <a data-v="projetos"><span class="ic">▣</span> Projetos</a>
+      <a data-v="secretarias" id="navSec"><span class="ic">▦</span> Secretarias</a>
+    </nav>
+    <div class="side-foot"><button class="btn ghost sm block" id="btnLogout">Sair</button></div>
+  </aside>
+  <div class="main">
+    <div class="top">
+      <div class="crumb" id="crumb"><b>Painel</b></div>
+      <div class="who"><div class="av" id="uAv">--</div><div><div class="nm" id="uNm">—</div><div class="rl" id="uRl">—</div></div></div>
+    </div>
+    <div class="wrap">
+      <div class="scope" id="scope"></div>
+
+      <section class="view on" id="v-painel">
+        <div class="ph"><h2 id="painelTit">Painel</h2><p id="painelSub">Visão da gestão</p></div>
+        <div class="kpis" id="kpis"><div class="loading">Carregando…</div></div>
+        <div class="panel"><div class="p-head"><h3>Demandas recentes</h3><span class="pill" id="demResumo">—</span></div><div class="p-body" id="painelDemandas"><div class="loading">Carregando…</div></div></div>
+      </section>
+
+      <section class="view" id="v-demandas">
+        <div class="ph"><h2>Demandas</h2><p>Governança distribui às pastas; a pasta executa e responde; e registra suas próprias demandas ao Prefeito.</p></div>
+        <div class="panel">
+          <div class="p-head"><h3>Nova demanda</h3></div>
+          <div class="form-inline" id="formDemanda">
+            <input class="full" id="dTitulo" placeholder="Título da demanda">
+            <textarea class="full" id="dDesc" placeholder="Descrição (opcional)"></textarea>
+            <select id="dSecretaria"></select>
+            <select id="dPrioridade"><option value="">Prioridade</option><option value="P1">P1</option><option value="P2">P2</option><option value="P3">P3</option></select>
+            <button class="btn full" id="btnCriarDemanda">Registrar demanda</button>
+          </div>
+        </div>
+        <div class="panel"><div class="p-head"><h3>Todas as demandas</h3></div><div class="p-body" id="listaDemandas"><div class="loading">Carregando…</div></div></div>
+      </section>
+
+      <section class="view" id="v-projetos">
+        <div class="ph"><h2>Projetos</h2><p>Carteira de projetos visível ao seu perfil.</p></div>
+        <div class="panel"><div class="p-body" id="listaProjetos"><div class="loading">Carregando…</div></div></div>
+      </section>
+
+      <section class="view" id="v-secretarias">
+        <div class="ph"><h2>Secretarias</h2><p>Órgãos e orçamento fixado (LOA 2026).</p></div>
+        <div class="panel"><div class="p-body" id="listaSecretarias"><div class="loading">Carregando…</div></div></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://phnthshtuyvchhwhihfh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_8T6ibUn0rIagthojKeoM-A_uVz64h2a';
+const gov = createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'governanca' } });
+
+let ME = null;
+const $ = s => document.querySelector(s);
+const brl = n => 'R$ ' + Number(n||0).toLocaleString('pt-BR');
+const stLabel = {nova:'Nova',recebida:'Recebida',em_execucao:'Em execução',concluida:'Concluída',devolvida:'Devolvida',cancelada:'Cancelada'};
+
+async function boot(){
+  const { data:{ session } } = await gov.auth.getSession();
+  if(session){ await loadMe(); } else { showLogin(); }
+}
+function showLogin(){ $('#login').classList.remove('hide'); $('#app').classList.add('hide'); }
+function showApp(){ $('#login').classList.add('hide'); $('#app').classList.remove('hide'); }
+
+$('#loginForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  $('#loginMsg').innerHTML=''; $('#btnLogin').textContent='Entrando…';
+  const { error } = await gov.auth.signInWithPassword({ email:$('#email').value.trim(), password:$('#senha').value });
+  $('#btnLogin').textContent='Entrar';
+  if(error){ $('#loginMsg').innerHTML='<div class="msg err">E-mail ou senha inválidos.</div>'; return; }
+  await loadMe();
+});
+$('#btnLogout').addEventListener('click', async ()=>{ await gov.auth.signOut(); location.reload(); });
+
+async function loadMe(){
+  const { data:{ user } } = await gov.auth.getUser();
+  const { data, error } = await gov.from('app_usuario').select('nome,papel,email,secretaria_id').eq('user_id', user.id).maybeSingle();
+  if(error || !data){ $('#loginMsg').innerHTML='<div class="msg err">Seu usuário não está cadastrado na plataforma.</div>'; await gov.auth.signOut(); showLogin(); return; }
+  ME = data;
+  let secNome = null;
+  if(ME.secretaria_id){ const { data:s } = await gov.from('secretaria').select('sigla,nome').eq('id',ME.secretaria_id).maybeSingle(); secNome=s; }
+  ME.secretaria = secNome;
+  renderIdentity();
+  showApp();
+  loadPainel(); loadDemandas(); loadProjetos(); loadSecretarias(); prepForm();
+}
+
+function isGlobal(){ return ME.papel==='prefeito' || ME.papel==='governanca'; }
+function renderIdentity(){
+  const ini = ME.nome.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  $('#uAv').textContent=ini; $('#uNm').textContent=ME.nome;
+  $('#uRl').textContent = ME.papel==='prefeito'?'Prefeito — vê tudo': ME.papel==='governanca'?'Governança — vê tudo': ('Secretário · '+(ME.secretaria?.sigla||''));
+  if(isGlobal()){ $('#scope').innerHTML='Você tem <b>visão global</b> — enxerga todas as secretarias.'; $('#painelTit').textContent='Painel do Prefeito'; }
+  else { $('#scope').innerHTML='Ambiente da <b>'+(ME.secretaria?.nome||'sua secretaria')+'</b> — você vê apenas a sua pasta.'; $('#painelTit').textContent='Meu Painel'; $('#navSec').classList.add('hide'); }
+  $('#painelSub').textContent = isGlobal()?'Visão consolidada da gestão':'Sua secretaria';
+}
+
+async function loadPainel(){
+  const [proj, dem, prog] = await Promise.all([
+    gov.from('projeto').select('id', {count:'exact', head:true}),
+    gov.from('demanda').select('id,status', {count:'exact'}),
+    gov.from('programa_ppa').select('valor_previsto')
+  ]);
+  const totProg = (prog.data||[]).reduce((a,b)=>a+Number(b.valor_previsto||0),0);
+  const abertas = (dem.data||[]).filter(d=>d.status!=='concluida'&&d.status!=='cancelada').length;
+  $('#kpis').innerHTML = `
+    <div class="kpi"><div class="k-lbl">Projetos</div><div class="k-val">${proj.count||0}</div><div class="k-sub">${isGlobal()?'na gestão':'na sua pasta'}</div></div>
+    <div class="kpi"><div class="k-lbl">Demandas abertas</div><div class="k-val">${abertas}</div><div class="k-sub">de ${dem.count||0} no total</div></div>
+    <div class="kpi"><div class="k-lbl">Programas PPA</div><div class="k-val">${(prog.data||[]).length}</div><div class="k-sub">${brl(totProg)}</div></div>
+    <div class="kpi"><div class="k-lbl">Seu perfil</div><div class="k-val" style="font-size:16px;padding-top:6px">${ME.papel==='secretario'?(ME.secretaria?.sigla||'—'):ME.papel}</div><div class="k-sub">${isGlobal()?'acesso total':'acesso restrito'}</div></div>`;
+  $('#demResumo').textContent = (dem.count||0)+' demandas';
+  renderDemandas('#painelDemandas', (dem.data||[]));
+}
+
+async function loadDemandas(){
+  const { data } = await gov.from('demanda').select('id,titulo,descricao,direcao,status,prioridade,secretaria_id,created_at').order('created_at',{ascending:false});
+  window._secmap = window._secmap || {};
+  renderDemandas('#listaDemandas', data||[], true);
+}
+function dirLabel(d){ return d.direcao==='governo_para_secretaria'?'Governo → Secretaria':'Secretaria → Prefeito'; }
+function renderDemandas(sel, list, withActions){
+  const el = $(sel);
+  if(!list.length){ el.innerHTML='<div class="empty">Nenhuma demanda.</div>'; return; }
+  el.innerHTML = list.map(d=>`
+    <div class="row">
+      <div class="r-main"><div class="r-t">${esc(d.titulo)}</div>
+        <div class="r-s">${dirLabel(d)}${d.prioridade?' · '+d.prioridade:''}${d.descricao?' · '+esc(d.descricao).slice(0,80):''}</div></div>
+      <span class="tag t-${d.status}">${stLabel[d.status]||d.status}</span>
+      ${withActions?statusSelect(d):''}
+    </div>`).join('');
+  if(withActions) el.querySelectorAll('select[data-id]').forEach(s=>s.addEventListener('change',onStatus));
+}
+function statusSelect(d){
+  const opts = ['nova','recebida','em_execucao','concluida','devolvida','cancelada'];
+  return `<select data-id="${d.id}" class="btn ghost sm" style="padding:5px 8px">${opts.map(o=>`<option value="${o}" ${o===d.status?'selected':''}>${stLabel[o]}</option>`).join('')}</select>`;
+}
+async function onStatus(e){
+  const id=e.target.dataset.id, status=e.target.value;
+  const { error } = await gov.from('demanda').update({status}).eq('id',id);
+  if(error){ alert('Sem permissão para alterar esta demanda.'); return; }
+  loadPainel();
+}
+
+async function prepForm(){
+  const sel = $('#dSecretaria');
+  if(isGlobal()){
+    const { data } = await gov.from('secretaria').select('id,sigla,nome').order('nome');
+    sel.innerHTML = '<option value="">Secretaria destino…</option>'+(data||[]).map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join('');
+  } else {
+    sel.innerHTML = `<option value="${ME.secretaria_id}">${esc(ME.secretaria?.nome||'Minha secretaria')}</option>`;
+    sel.value = ME.secretaria_id;
+  }
+}
+$('#btnCriarDemanda').addEventListener('click', async ()=>{
+  const titulo=$('#dTitulo').value.trim(); if(!titulo){ alert('Informe um título.'); return; }
+  const secretaria_id = isGlobal()? $('#dSecretaria').value : ME.secretaria_id;
+  if(!secretaria_id){ alert('Selecione a secretaria.'); return; }
+  const direcao = isGlobal()? 'governo_para_secretaria':'secretaria_para_prefeito';
+  const { error } = await gov.from('demanda').insert({ titulo, descricao:$('#dDesc').value.trim()||null, direcao, secretaria_id, prioridade:$('#dPrioridade').value||null });
+  if(error){ alert('Não foi possível registrar: '+error.message); return; }
+  $('#dTitulo').value=''; $('#dDesc').value=''; $('#dPrioridade').value='';
+  loadDemandas(); loadPainel();
+});
+
+async function loadProjetos(){
+  const { data } = await gov.from('projeto').select('codigo,nome,status,prioridade').order('created_at',{ascending:false});
+  const el=$('#listaProjetos');
+  if(!data||!data.length){ el.innerHTML='<div class="empty">Nenhum projeto visível.</div>'; return; }
+  el.innerHTML = data.map(p=>`<div class="row"><div class="r-main"><div class="r-t">${esc(p.nome)}</div><div class="r-s">${p.codigo||''}</div></div>${p.prioridade?`<span class="pill">${p.prioridade}</span>`:''}<span class="tag t-nova">${(p.status||'').replace('_',' ')}</span></div>`).join('');
+}
+async function loadSecretarias(){
+  if(!isGlobal()) return;
+  const { data } = await gov.from('orcamento_orgao').select('valor_fixado,secretaria:secretaria_id(sigla,nome)').order('valor_fixado',{ascending:false});
+  const el=$('#listaSecretarias');
+  if(!data||!data.length){ el.innerHTML='<div class="empty">Sem dados.</div>'; return; }
+  el.innerHTML = data.map(o=>`<div class="row"><div class="r-main"><div class="r-t">${esc(o.secretaria?.nome||'—')}</div><div class="r-s">${o.secretaria?.sigla||''}</div></div><b>${brl(o.valor_fixado)}</b></div>`).join('');
+}
+
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>{
+  const v=a.dataset.v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
+  $('#v-'+v).classList.add('on');
+  document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x===a));
+  $('#crumb').innerHTML='<b>'+a.textContent.trim()+'</b>';
+}));
+
+boot();
+</script>
+</body>
+</html>
