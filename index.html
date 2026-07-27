@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Governança SM — Plataforma de Gestão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--azul:#0b4f8a;--azul-esc:#073b68;--azul-cl:#e8f1fa;--verde:#1d9e75;--verde-cl:#e1f5ee;--verde-esc:#0f6e56;--ambar:#d9932a;--ambar-cl:#faeeda;--ambar-esc:#854f0b;--verm:#d64545;--verm-cl:#fceaea;--verm-esc:#8f2727;--roxo:#6a5acd;--roxo-cl:#eeedfe;--coral:#d85a30;--tin:#334155;--tsec:#64748b;--mut:#94a3b8;--bg:#f4f6f9;--card:#fff;--linha:#e5e9f0;--linha2:#eef1f6;--radius:12px;--sombra:0 1px 3px rgba(15,40,80,.06)}
+:root{--azul:#662d91;--azul-esc:#4e2270;--azul-cl:#f0e9f6;--verde:#72bf44;--verde-cl:#eef7e6;--verde-esc:#3f7a1f;--ambar:#d9932a;--ambar-cl:#faeeda;--ambar-esc:#854f0b;--verm:#d64545;--verm-cl:#fceaea;--verm-esc:#8f2727;--roxo:#6a5acd;--roxo-cl:#eeedfe;--coral:#d85a30;--tin:#334155;--tsec:#64748b;--mut:#94a3b8;--bg:#f4f6f9;--card:#fff;--linha:#e5e9f0;--linha2:#eef1f6;--radius:12px;--sombra:0 1px 3px rgba(15,40,80,.06)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--tin);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--tin);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .hide{display:none!important}
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#073b68,#0b4f8a)}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#4e2270,#662d91)}
 .login-card{background:#fff;border-radius:16px;padding:34px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
 .login-card .mk{width:52px;height:52px;border-radius:12px;background:var(--azul-esc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;margin-bottom:16px}
 .login-card h1{font-size:20px;color:#0f2544;font-weight:700}.login-card p{font-size:13px;color:var(--tsec);margin-bottom:22px}
@@ -21,9 +23,10 @@ body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var
 .msg{font-size:12.5px;padding:9px 12px;border-radius:8px;margin-top:12px}.msg.err{background:var(--verm-cl);color:var(--verm-esc)}
 .app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
 .side{background:var(--azul-esc);color:#dfeaf5;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
-.brand{padding:20px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;gap:11px;align-items:center}
-.brand .mk{width:38px;height:38px;border-radius:9px;background:#fff;color:var(--azul-esc);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
-.brand h1{font-size:15px;color:#fff;font-weight:700}.brand span{font-size:11px;color:#9fc0e0}
+.brand{padding:16px 16px 15px;border-bottom:3px solid var(--verde);display:flex;flex-direction:column;gap:8px}
+.logo-plate{background:#fff;border-radius:10px;padding:10px 12px;width:100%}
+.logo-plate img{width:100%;display:block}
+.brand .bt{font-size:11px;color:#d9c8ea;font-weight:600;text-align:center;letter-spacing:.3px}
 .nav{padding:12px;flex:1}.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:#cfe0f0;font-size:13.5px;font-weight:500;cursor:pointer}
 .nav a .ic{width:16px;text-align:center}.nav a:hover{background:rgba(255,255,255,.08);color:#fff}.nav a.on{background:var(--azul);color:#fff;font-weight:600}
 .side-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.1)}
@@ -56,6 +59,17 @@ body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var
 .alert{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--linha2)}.alert:last-child{border:none}
 .alert .a-ic{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
 .alert .a-tx{font-size:12.5px;line-height:1.35}.alert .a-tx b{color:#12213c}.alert .a-tx span{color:var(--tsec);display:block;font-size:11px}
+.radar{border:1px solid var(--linha);border-radius:var(--radius);box-shadow:var(--sombra);margin-bottom:20px;overflow:hidden;background:#fff}
+.radar-h{padding:12px 18px;border-bottom:1px solid var(--linha2);display:flex;align-items:center;justify-content:space-between}
+.radar-h h3{font-size:15px;font-weight:700;color:#12213c;display:flex;align-items:center;gap:8px}
+.radar-h .rh-ic{width:24px;height:24px;border-radius:6px;background:var(--verm);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.radar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:12px;padding:16px 18px}
+.pcard{border-radius:11px;padding:13px 15px;color:#fff;position:relative;display:flex;flex-direction:column;min-height:120px;border-left:6px solid rgba(0,0,0,.2)}
+.pcard .u{position:absolute;top:12px;right:13px;font-size:9.5px;font-weight:800;background:rgba(255,255,255,.28);padding:2px 8px;border-radius:12px;text-transform:uppercase;letter-spacing:.4px}
+.pcard h4{font-size:13.5px;font-weight:700;line-height:1.25;margin-bottom:6px;padding-right:62px}
+.pcard p{font-size:11.5px;opacity:.93;line-height:1.35;margin-bottom:9px}
+.pcard .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font-size:11px;opacity:.96}
+.pcard .st{background:rgba(255,255,255,.25);padding:2px 8px;border-radius:10px;font-weight:700}
 .eixo{margin-bottom:18px}.eixo-h{display:flex;align-items:center;gap:9px;margin-bottom:10px}
 .eixo-h .e-ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700}
 .eixo-h h4{font-size:14px;font-weight:700;color:#12213c}.eixo-h .e-ct{font-size:11px;color:var(--tsec);background:#eef1f6;padding:2px 9px;border-radius:20px;font-weight:600}
@@ -91,7 +105,8 @@ body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var
 
 <div id="login" class="login-wrap">
   <div class="login-card">
-    <div class="mk">SM</div><h1>Governança SM</h1>
+    <img src="logo.png" alt="Prefeitura de Santa Maria" style="height:56px;margin-bottom:16px">
+    <h1>Governança SM</h1>
     <p>Plataforma de Gestão — Prefeitura de Santa Maria</p>
     <form id="loginForm">
       <div class="fld"><label>E-mail</label><input type="email" id="email" placeholder="voce@sm.gov.br" required></div>
@@ -104,9 +119,10 @@ body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var
 
 <div id="app" class="app hide">
   <aside class="side">
-    <div class="brand"><div class="mk">SM</div><div><h1>Governança SM</h1><span>Santa Maria</span></div></div>
+    <div class="brand"><div class="logo-plate"><img src="logo.png" alt="Prefeitura de Santa Maria"></div><div class="bt">GOVERNANÇA · GESTÃO</div></div>
     <nav class="nav" id="nav">
       <a class="on" data-v="painel"><span class="ic">◧</span> Painel</a>
+      <a data-v="pautas"><span class="ic">◉</span> Pautas do Prefeito</a>
       <a data-v="mapa"><span class="ic">▦</span> Mapa da Gestão</a>
       <a data-v="gantt"><span class="ic">▥</span> Cronograma</a>
       <a data-v="demandas"><span class="ic">⇄</span> Demandas</a>
@@ -125,12 +141,28 @@ body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var
 
       <section class="view on" id="v-painel">
         <div class="ph"><h2 id="painelTit">Painel do Prefeito</h2><p id="painelSub">Visão consolidada da gestão</p></div>
+        <div id="radar"></div>
         <div class="kpis" id="kpis"><div class="loading">Carregando…</div></div>
         <div class="cols">
           <div class="panel"><div class="p-head"><h3>Andamento por Secretaria</h3><span class="lnk" data-go="projetos">Ver projetos</span></div><div class="p-body" id="semaforo"></div></div>
           <div class="panel"><div class="p-head"><h3>Alertas do Prefeito</h3></div><div class="p-body" id="alertas"></div></div>
         </div>
         <div class="panel"><div class="p-head"><h3>Prioridades de governo</h3><span class="lnk" data-go="mapa">Abrir mapa</span></div><div class="p-body" id="prioridades"></div></div>
+      </section>
+
+      <section class="view" id="v-pautas">
+        <div class="ph"><h2>Pautas do Prefeito</h2><p>Assuntos que a Governança sinaliza para o Prefeito cuidar. Aparecem no topo do Painel, por urgência.</p></div>
+        <div class="panel" id="formPautaWrap"><div class="p-head"><h3>Nova pauta</h3></div>
+          <div class="form-inline">
+            <input class="full" id="pTitulo" placeholder="Título da pauta">
+            <textarea class="full" id="pDesc" placeholder="O que o Prefeito precisa saber / decidir"></textarea>
+            <select id="pUrg"><option value="critica">Urgência: Crítica</option><option value="alta" selected>Urgência: Alta</option><option value="media">Urgência: Média</option></select>
+            <input id="pPrazo" type="date">
+            <input class="full" id="pCat" placeholder="Categoria (ex.: Orçamento, Legislativo, Obra)">
+            <button class="btn full" id="btnCriarPauta">Registrar pauta</button>
+          </div>
+        </div>
+        <div class="panel"><div class="p-head"><h3>Todas as pautas</h3></div><div class="p-body" id="pautasList"><div class="loading">Carregando…</div></div></div>
       </section>
 
       <section class="view" id="v-mapa">
@@ -180,13 +212,18 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL='https://phnthshtuyvchhwhihfh.supabase.co';
 const SUPABASE_KEY='sb_publishable_8T6ibUn0rIagthojKeoM-A_uVz64h2a';
 const gov=createClient(SUPABASE_URL,SUPABASE_KEY,{db:{schema:'governanca'}});
-let ME=null, PROJ=[];
+let ME=null, PROJ=[], PAUTAS=[];
 const $=s=>document.querySelector(s);
+const UR={critica:'#b03030',alta:'#b5701a',media:'#0b4f8a'};
+const UL={critica:'Crítica',alta:'Alta',media:'Média'};
+const PSL={aberta:'Aberta',em_andamento:'Em andamento',resolvida:'Resolvida'};
+const sev=p=>({critica:0,alta:1,media:2}[p.urgencia]);
+const fmtd=d=>{const x=new Date(d+'T00:00:00');return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();};
 const brl=n=>'R$ '+Number(n||0).toLocaleString('pt-BR');
 const brlM=n=>'R$ '+(Number(n||0)/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+'M';
-const CR={no_prazo:'#1d9e75',em_atencao:'#d9932a',critico:'#d64545',nao_iniciado:'#0b4f8a',concluido:'#0f6e56'};
-const CRE={no_prazo:'#0f6e56',em_atencao:'#854f0b',critico:'#8f2727',nao_iniciado:'#073b68',concluido:'#0f6e56'};
-const CRB={no_prazo:'#e1f5ee',em_atencao:'#faeeda',critico:'#fceaea',nao_iniciado:'#e8f1fa',concluido:'#e1f5ee'};
+const CR={no_prazo:'#1d9e75',em_atencao:'#d9932a',critico:'#d64545',nao_iniciado:'#8a6fb0',concluido:'#3f7a1f'};
+const CRE={no_prazo:'#0f6e56',em_atencao:'#854f0b',critico:'#8f2727',nao_iniciado:'#4e2270',concluido:'#3f7a1f'};
+const CRB={no_prazo:'#e1f5ee',em_atencao:'#faeeda',critico:'#fceaea',nao_iniciado:'#f0e9f6',concluido:'#eef7e6'};
 const SL={no_prazo:'No prazo',em_atencao:'Em atenção',critico:'Crítico',nao_iniciado:'Não iniciado',concluido:'Concluído'};
 const stLabel={nova:'Nova',recebida:'Recebida',em_execucao:'Em execução',concluida:'Concluída',devolvida:'Devolvida',cancelada:'Cancelada'};
 const meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -210,7 +247,7 @@ async function loadMe(){
   renderId();showApp();
   await loadProjetos();
   renderPainel();renderMapa();renderGantt();
-  loadDemandas();renderProjetos();loadSecretarias();prepForm();
+  loadPautas();loadDemandas();renderProjetos();loadSecretarias();prepForm();
 }
 function renderId(){
   const ini=ME.nome.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -296,6 +333,31 @@ async function loadSecretarias(){
   const el=$('#listaSecretarias');if(!data||!data.length){el.innerHTML='<div class="empty">Sem dados.</div>';return;}
   el.innerHTML=data.map(o=>`<div class="row"><div class="r-main"><div class="r-t">${esc(o.secretaria?.nome||'—')}</div><div class="r-s">${o.secretaria?.sigla||''}</div></div><b>${brl(o.valor_fixado)}</b></div>`).join('');
 }
+async function loadPautas(){
+  const {data}=await gov.from('pauta').select('id,titulo,descricao,urgencia,status,categoria,prazo,secretaria:secretaria_id(sigla)');
+  PAUTAS=(data||[]).sort((a,b)=>sev(a)-sev(b));
+  renderRadar();renderPautasView();
+}
+function renderRadar(){
+  const el=$('#radar');const open=PAUTAS.filter(p=>p.status!=='resolvida');
+  if(!open.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="radar"><div class="radar-h"><h3><span class="rh-ic">!</span> Radar do Prefeito — pautas para cuidar</h3><span class="pill">${open.length} aberta(s)</span></div>
+  <div class="radar-grid">${open.map(p=>`<div class="pcard" style="background:${UR[p.urgencia]}"><span class="u">${UL[p.urgencia]}</span><h4>${esc(p.titulo)}</h4>${p.descricao?`<p>${esc(p.descricao)}</p>`:''}<div class="foot"><span>${p.secretaria?.sigla?esc(p.secretaria.sigla)+' · ':''}${p.prazo?fmtd(p.prazo):'sem prazo'}</span><span class="st">${PSL[p.status]}</span></div></div>`).join('')}</div></div>`;
+}
+function pautaSel(p){const o=['aberta','em_andamento','resolvida'];return `<select data-pid="${p.id}" class="btn ghost sm" style="padding:5px 8px">${o.map(x=>`<option value="${x}" ${x===p.status?'selected':''}>${PSL[x]}</option>`).join('')}</select>`;}
+function renderPautasView(){
+  const el=$('#pautasList');
+  $('#formPautaWrap').style.display=isGlobal()?'':'none';
+  if(!PAUTAS.length){el.innerHTML='<div class="empty">Nenhuma pauta.</div>';return;}
+  el.innerHTML=PAUTAS.map(p=>`<div class="row"><div class="r-main"><div class="r-t">${esc(p.titulo)}</div><div class="r-s">${p.categoria?esc(p.categoria)+' · ':''}${p.secretaria?.sigla?esc(p.secretaria.sigla)+' · ':''}${p.prazo?fmtd(p.prazo):'sem prazo'}</div></div><span class="tag" style="background:${UR[p.urgencia]};color:#fff">${UL[p.urgencia]}</span>${isGlobal()?pautaSel(p):`<span class="pill">${PSL[p.status]}</span>`}</div>`).join('');
+  el.querySelectorAll('select[data-pid]').forEach(s=>s.addEventListener('change',onPautaStatus));
+}
+async function onPautaStatus(e){const {error}=await gov.from('pauta').update({status:e.target.value}).eq('id',e.target.dataset.pid);if(error){alert('Sem permissão.');}loadPautas();}
+$('#btnCriarPauta').addEventListener('click',async()=>{
+  const titulo=$('#pTitulo').value.trim();if(!titulo){alert('Informe um título.');return;}
+  const {error}=await gov.from('pauta').insert({titulo,descricao:$('#pDesc').value.trim()||null,urgencia:$('#pUrg').value,prazo:$('#pPrazo').value||null,categoria:$('#pCat').value.trim()||null});
+  if(error){alert('Não foi possível registrar: '+error.message);return;}
+  $('#pTitulo').value='';$('#pDesc').value='';$('#pPrazo').value='';$('#pCat').value='';loadPautas();});
 document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));
 document.querySelectorAll('[data-go]').forEach(x=>x.addEventListener('click',()=>go(x.dataset.go)));
 function go(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
