@@ -99,6 +99,44 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .form-inline textarea{min-height:52px;resize:vertical}select{background:#fff}
 .loading{padding:36px;text-align:center;color:var(--tsec);font-size:13px}.empty{padding:24px 18px;text-align:center;color:var(--mut);font-size:13px}
 @media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.kpis{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}}
+.livro-cta{margin:-4px 0 18px}.livro-cta .btn{background:#4e2270}
+.livro-ov{position:fixed;inset:0;background:#525659;z-index:100;overflow:auto;display:none}
+.livro-ov.on{display:block}
+.livro-bar{position:sticky;top:0;background:#2c2c2e;padding:10px 16px;display:flex;gap:10px;justify-content:center;align-items:center;z-index:2}
+.livro-bar .sp{flex:1;color:#cfcfcf;font-size:12.5px}
+.book{padding:22px 0}
+.page{width:210mm;min-height:295mm;background:#fff;margin:0 auto 14px;padding:20mm 18mm;box-shadow:0 4px 20px rgba(0,0,0,.35);color:#1c2431;font-size:12px;line-height:1.55;position:relative}
+.page.cover{padding:0;display:flex;flex-direction:column;overflow:hidden}
+.cover-top{background:#662d91;color:#fff;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:38mm 20mm;text-align:center}
+.cover-top img{height:78px;margin-bottom:26px}
+.cover-top .kick{font-size:13px;letter-spacing:3px;color:#c9b3e0;text-transform:uppercase;margin-bottom:14px}
+.cover-top h1{font-size:32px;font-weight:800;line-height:1.12;margin-bottom:12px}
+.cover-top h2{font-size:16px;font-weight:500;color:#e3d4f2}
+.cover-bar{height:13mm;background:#72bf44}
+.cover-foot{padding:13mm 20mm;text-align:center;color:#4e2270;font-size:12px}
+.page h3.sec{font-size:19px;color:#4e2270;font-weight:800;border-bottom:3px solid #72bf44;padding-bottom:7px;margin-bottom:14px}
+.page h4{font-size:13.5px;color:#662d91;font-weight:700;margin:15px 0 7px}
+.page p{margin-bottom:9px;text-align:justify}
+.kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.kbox{border:1px solid #e5e9f0;border-radius:8px;padding:12px 13px}
+.kbox .v{font-size:21px;font-weight:800;color:#4e2270;line-height:1}.kbox .l{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:600;margin-top:5px}
+.btable{width:100%;border-collapse:collapse;font-size:10px;margin-top:8px}
+.btable th{background:#f0e9f6;color:#4e2270;text-align:left;padding:6px 7px;font-weight:700}
+.btable td{border-bottom:1px solid #eef1f6;padding:5px 7px}
+.bdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.eixogrp{margin-bottom:11px}.eixogrp .eh{font-weight:700;color:#12213c;font-size:12.5px;margin-bottom:6px;border-left:5px solid;padding-left:8px}
+.chips2{display:flex;flex-wrap:wrap;gap:6px}.chip2{font-size:10px;padding:4px 9px;border-radius:6px;color:#fff;font-weight:600}
+.pfoot{position:absolute;bottom:9mm;left:18mm;right:18mm;border-top:1px solid #e5e9f0;padding-top:5px;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between}
+@media print{
+  @page{size:A4;margin:0}
+  html,body{background:#fff}
+  .app,#login{display:none!important}
+  .livro-ov{position:static;background:#fff;overflow:visible;display:block!important}
+  .livro-bar{display:none!important}
+  .book{padding:0}
+  .page{box-shadow:none;margin:0;width:auto;min-height:auto;page-break-after:always}
+  .page:last-child{page-break-after:auto}
+}
 </style>
 </head>
 <body>
@@ -141,6 +179,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 
       <section class="view on" id="v-painel">
         <div class="ph"><h2 id="painelTit">Painel do Prefeito</h2><p id="painelSub">Visão consolidada da gestão</p></div>
+        <div class="livro-cta" id="livroCta"><button class="btn" id="btnGerarLivro">▤ Gerar Livro do Governo (PDF)</button></div>
         <div id="radar"></div>
         <div class="kpis" id="kpis"><div class="loading">Carregando…</div></div>
         <div class="cols">
@@ -207,6 +246,15 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
   </div>
 </div>
 
+<div class="livro-ov" id="livroOverlay">
+  <div class="livro-bar">
+    <span class="sp">Livro do Governo — pré-visualização</span>
+    <button class="btn sm" id="btnImprimir">Imprimir / Salvar PDF</button>
+    <button class="btn ghost sm" id="btnFecharLivro">Fechar</button>
+  </div>
+  <div class="book" id="bookContent"></div>
+</div>
+
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL='https://phnthshtuyvchhwhihfh.supabase.co';
@@ -255,6 +303,7 @@ function renderId(){
   $('#uRl').textContent=ME.papel==='prefeito'?'Prefeito — vê tudo':ME.papel==='governanca'?'Governança — vê tudo':('Secretário · '+(ME.secretaria?.sigla||''));
   if(isGlobal()){$('#scope').innerHTML='Você tem <b>visão global</b> — todas as secretarias.';$('#painelTit').textContent='Painel do Prefeito';}
   else{$('#scope').innerHTML='Ambiente da <b>'+(ME.secretaria?.nome||'sua secretaria')+'</b> — você vê apenas a sua pasta.';$('#painelTit').textContent='Meu Painel';$('#navSec').classList.add('hide');}
+  $('#livroCta').style.display=isGlobal()?'':'none';
 }
 async function loadProjetos(){
   const {data}=await gov.from('projeto').select('codigo,nome,status,prioridade,progresso_fisico,data_inicio,data_fim_prevista,secretaria:secretaria_id(sigla,nome),eixo:eixo_id(nome,cor),exec:execucao_orcamentaria(valor_orcado,empenhado)').order('prioridade');
@@ -358,6 +407,48 @@ $('#btnCriarPauta').addEventListener('click',async()=>{
   const {error}=await gov.from('pauta').insert({titulo,descricao:$('#pDesc').value.trim()||null,urgencia:$('#pUrg').value,prazo:$('#pPrazo').value||null,categoria:$('#pCat').value.trim()||null});
   if(error){alert('Não foi possível registrar: '+error.message);return;}
   $('#pTitulo').value='';$('#pDesc').value='';$('#pPrazo').value='';$('#pCat').value='';loadPautas();});
+async function gerarLivro(){
+  const btn=$('#btnGerarLivro');const old=btn.textContent;btn.textContent='Gerando…';btn.disabled=true;
+  const [prog,org]=await Promise.all([gov.from('programa_ppa').select('valor_previsto'),gov.from('orcamento_orgao').select('valor_fixado')]);
+  const loaTotal=(org.data||[]).reduce((a,b)=>a+Number(b.valor_fixado||0),0);
+  const progN=(prog.data||[]).length, ppaTotal=(prog.data||[]).reduce((a,b)=>a+Number(b.valor_previsto||0),0);
+  const t=PROJ.length,ok=PROJ.filter(p=>p.status==='no_prazo'||p.status==='concluido').length,at=PROJ.filter(p=>p.status==='em_atencao').length,cr=PROJ.filter(p=>p.status==='critico').length,con=PROJ.filter(p=>p.status==='concluido').length;
+  const orc=PROJ.reduce((a,p)=>a+p.orc,0),emp=PROJ.reduce((a,p)=>a+p.emp,0);
+  const benef=PROJ.reduce((a,p)=>a+(p.beneficiarios||0),0);
+  const secs=new Set(PROJ.map(p=>p.secretaria?.sigla).filter(Boolean)).size;
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const byE={};PROJ.forEach(p=>{const k=p.eixo?.nome||'Sem eixo';(byE[k]=byE[k]||{cor:p.eixo?.cor||'#64748b',ps:[]}).ps.push(p)});
+  const foot=n=>`<div class="pfoot"><span>Livro do Governo · Prefeitura de Santa Maria</span><span>Gerado em ${hoje} · pág. ${n}</span></div>`;
+  const kb=(v,l)=>`<div class="kbox"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+  const pages=[];
+  pages.push(`<div class="page cover"><div class="cover-top"><div style="background:#fff;border-radius:12px;padding:16px 24px;margin-bottom:26px"><img src="logo.png" alt="Prefeitura de Santa Maria" style="height:66px;display:block;margin:0"></div><div class="kick">Livro do Governo</div><h1>Gestão Municipal 2025–2028</h1><h2>Prefeitura Municipal de Santa Maria</h2></div><div class="cover-bar"></div><div class="cover-foot"><b>Relatório consolidado da gestão</b><br>Pautas, projetos, orçamento e impactos sociais · Gerado em ${hoje}</div></div>`);
+  pages.push(`<div class="page"><h3 class="sec">1. Objetivo</h3><p>A Plataforma de Governança da Prefeitura Municipal de Santa Maria tem como objetivo dar transparência, previsibilidade e ritmo à execução das prioridades de governo. Este Livro do Governo consolida, em um único documento e de forma automática, o retrato atualizado da gestão — as pautas priorizadas pelo Gabinete, os projetos conduzidos por cada Secretaria, os recursos orçamentários vinculados e os impactos esperados para a população de Santa Maria.</p>
+  <h3 class="sec" style="margin-top:24px">2. Justificativa</h3><p>A boa gestão pública exige planejamento, acompanhamento contínuo e prestação de contas. Ao integrar o Plano Plurianual (PPA 2026–2029), a Lei Orçamentária Anual (LOA 2026) e a execução dos projetos prioritários, este documento permite ao Prefeito e à sociedade acompanhar o que foi planejado, o que está em execução e o que já foi entregue.</p><p>Mais do que um relatório, é um instrumento de decisão: evidencia avanços, sinaliza riscos e orienta correções de rota com base em dados sempre atualizados. Cada geração deste Livro reflete o estado real da gestão no momento da emissão.</p>${foot(2)}</div>`);
+  pages.push(`<div class="page"><h3 class="sec">3. Indicadores da Gestão</h3>
+  <div class="kgrid">${kb(t,'Projetos prioritários')}${kb(ok,'No prazo / concluídos')}${kb(at,'Em atenção')}${kb(cr,'Críticos')}${kb(con,'Concluídos')}${kb(secs,'Secretarias envolvidas')}${kb(brlM(emp),'Investido (empenhado)')}${kb(brlM(orc),'Orçado nos projetos')}${kb(brlM(loaTotal),'LOA 2026 (total)')}</div>
+  <h4>Leitura</h4><p>A carteira reúne <b>${t}</b> projetos prioritários distribuídos em <b>${secs}</b> secretarias, com <b>${ok}</b> no prazo ou concluídos e <b>${cr}</b> em situação crítica que requerem atenção imediata do Gabinete. O Plano Plurianual 2026–2029 organiza <b>${progN}</b> programas de governo, totalizando <b>${brlM(ppaTotal)}</b> previstos, dos quais <b>${brlM(emp)}</b> já foram empenhados nos projetos prioritários.</p>${foot(3)}</div>`);
+  pages.push(`<div class="page"><h3 class="sec">4. Mapa do Governo</h3><p>Distribuição dos projetos prioritários por eixo de governo, com a cor indicando o status de execução (verde: no prazo; âmbar: em atenção; vermelho: crítico; roxo: não iniciado).</p>
+  ${Object.entries(byE).map(([n,o])=>`<div class="eixogrp"><div class="eh" style="border-color:${o.cor}">${esc(n)} — ${o.ps.length} projeto(s)</div><div class="chips2">${o.ps.map(p=>`<span class="chip2" style="background:${CR[p.status]}">${esc(p.nome)} · ${p.progresso_fisico}%</span>`).join('')}</div></div>`).join('')}${foot(4)}</div>`);
+  const prows=PROJ.map(p=>`<tr><td>${esc(p.nome)}</td><td>${p.secretaria?.sigla||''}</td><td>${p.prioridade||''}</td><td><span class="bdot" style="background:${CR[p.status]}"></span>${SL[p.status]}</td><td style="text-align:right">${p.progresso_fisico}%</td><td style="text-align:right">${brlM(p.orc)}</td></tr>`);
+  let pg=5;const per=26;
+  for(let i=0;i<prows.length;i+=per){
+    pages.push(`<div class="page"><h3 class="sec">5. Projetos de Governo${prows.length>per?' (cont.)':''}</h3><table class="btable"><thead><tr><th>Projeto</th><th>Sec.</th><th>Prior.</th><th>Status</th><th style="text-align:right">Físico</th><th style="text-align:right">Orçado</th></tr></thead><tbody>${prows.slice(i,i+per).join('')}</tbody></table>${foot(pg++)}</div>`);
+  }
+  const social=['Saúde','Educação','Desenvolvimento Social'];
+  const socialProj=PROJ.filter(p=>social.includes(p.eixo?.nome));
+  const socialOrc=socialProj.reduce((a,p)=>a+p.orc,0);
+  pages.push(`<div class="page"><h3 class="sec">6. Impactos Sociais</h3><p>Os projetos prioritários alcançam diretamente a população de Santa Maria, com foco nas áreas de maior impacto social — saúde, educação e assistência.</p>
+  <div class="kgrid">${kb(benef.toLocaleString('pt-BR'),'Beneficiários diretos estimados')}${kb(socialProj.length,'Projetos nas áreas sociais')}${kb(brlM(socialOrc),'Investimento social')}</div>
+  <h4>Por área social</h4>${social.map(s=>{const ps=PROJ.filter(p=>p.eixo?.nome===s);return `<p><b>${s}:</b> ${ps.length} projeto(s), ${brlM(ps.reduce((a,p)=>a+p.orc,0))} orçados${ps.some(p=>p.beneficiarios)?', beneficiando '+ps.reduce((a,p)=>a+(p.beneficiarios||0),0).toLocaleString('pt-BR')+' pessoas':''}.</p>`}).join('')}${foot(pg++)}</div>`);
+  pages.push(`<div class="page"><h3 class="sec">7. Considerações Finais</h3><p>Este Livro do Governo é gerado automaticamente pela Plataforma de Governança e reflete o estado da gestão na data de emissão. A cada nova geração, os números, projetos e pautas são atualizados a partir da base de dados oficial, garantindo um documento sempre fiel à realidade.</p><p>O acompanhamento contínuo das pautas priorizadas, aliado à execução transparente do orçamento, é o compromisso desta gestão com a população de Santa Maria.</p>
+  <div style="margin-top:34mm;text-align:center"><div style="border-top:1px solid #1c2431;width:72mm;margin:0 auto;padding-top:6px;font-weight:600">Prefeitura Municipal de Santa Maria</div></div>${foot(pg++)}</div>`);
+  $('#bookContent').innerHTML=pages.join('');
+  $('#livroOverlay').classList.add('on');window.scrollTo(0,0);
+  btn.textContent=old;btn.disabled=false;
+}
+$('#btnGerarLivro')&&$('#btnGerarLivro').addEventListener('click',gerarLivro);
+$('#btnFecharLivro').addEventListener('click',()=>$('#livroOverlay').classList.remove('on'));
+$('#btnImprimir').addEventListener('click',()=>window.print());
 document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));
 document.querySelectorAll('[data-go]').forEach(x=>x.addEventListener('click',()=>go(x.dataset.go)));
 function go(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
