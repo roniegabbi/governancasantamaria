@@ -161,6 +161,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
     <nav class="nav" id="nav">
       <a class="on" data-v="painel"><span class="ic">◧</span> Painel</a>
       <a data-v="pautas"><span class="ic">◉</span> Pautas do Prefeito</a>
+      <a data-v="plano"><span class="ic">◈</span> Plano de Governo</a>
       <a data-v="mapa"><span class="ic">▦</span> Mapa da Gestão</a>
       <a data-v="gantt"><span class="ic">▥</span> Cronograma</a>
       <a data-v="demandas"><span class="ic">⇄</span> Demandas</a>
@@ -202,6 +203,11 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
           </div>
         </div>
         <div class="panel"><div class="p-head"><h3>Todas as pautas</h3></div><div class="p-body" id="pautasList"><div class="loading">Carregando…</div></div></div>
+      </section>
+
+      <section class="view" id="v-plano">
+        <div class="ph"><h2>Plano de Governo — Todos por Santa Maria (2025–2028)</h2><p>Conciliação entre as promessas do Plano de Governo e os projetos em execução — quanto do plano já virou ação.</p></div>
+        <div id="planoWrap"><div class="loading">Carregando…</div></div>
       </section>
 
       <section class="view" id="v-mapa">
@@ -295,7 +301,7 @@ async function loadMe(){
   renderId();showApp();
   await loadProjetos();
   renderPainel();renderMapa();renderGantt();
-  loadPautas();loadDemandas();renderProjetos();loadSecretarias();prepForm();
+  loadPautas();loadPlano();loadDemandas();renderProjetos();loadSecretarias();prepForm();
 }
 function renderId(){
   const ini=ME.nome.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -407,9 +413,80 @@ $('#btnCriarPauta').addEventListener('click',async()=>{
   const {error}=await gov.from('pauta').insert({titulo,descricao:$('#pDesc').value.trim()||null,urgencia:$('#pUrg').value,prazo:$('#pPrazo').value||null,categoria:$('#pCat').value.trim()||null});
   if(error){alert('Não foi possível registrar: '+error.message);return;}
   $('#pTitulo').value='';$('#pDesc').value='';$('#pPrazo').value='';$('#pCat').value='';loadPautas();});
+const STP={sem_projeto:{l:'Sem projeto',c:'#94a3b8',b:'#eef1f6',t:'#5f5e5a'},em_execucao:{l:'Em execução',c:'#d9932a',b:'#faeeda',t:'#854f0b'},entregue:{l:'Entregue',c:'#1d9e75',b:'#e1f5ee',t:'#0f6e56'}};
+let PROMS=[],METAS=[];
+const fmtNum=n=>Number(n||0).toLocaleString('pt-BR');
+async function loadPlano(){
+  const [pr,mt]=await Promise.all([
+    gov.from('promessa').select('id,codigo,pilar,titulo,promessa_projeto(projeto:projeto_id(nome,status,progresso_fisico))').order('codigo'),
+    gov.from('meta_plano').select('id,indicador,unidade,valor_alvo,valor_atual,prazo_ano,fonte,pilar').order('pilar')
+  ]);
+  PROMS=(pr.data||[]).map(p=>{
+    const links=(p.promessa_projeto||[]).map(x=>x.projeto).filter(Boolean);
+    const avg=links.length?Math.round(links.reduce((a,x)=>a+(x.progresso_fisico||0),0)/links.length):0;
+    let st='sem_projeto';if(links.length)st=links.every(x=>x.status==='concluido')?'entregue':'em_execucao';
+    return {...p,links,avg,st};
+  });
+  METAS=mt.data||[];
+  renderPlano();
+}
+function renderPlano(){
+  const proms=PROMS;
+  const ms=new Date(2025,0,1),me=new Date(2028,11,31);
+  const mp=Math.max(0,Math.min(100,Math.round((Date.now()-ms)/(me-ms)*100)));
+  const rest=Math.max(0,Math.round((me-Date.now())/(1000*60*60*24*30.44)));
+  const tot=proms.length,com=proms.filter(p=>p.st!=='sem_projeto').length,exec=proms.filter(p=>p.st==='em_execucao').length,ent=proms.filter(p=>p.st==='entregue').length;
+  const cob=tot?Math.round(com/tot*100):0;
+  const projOpts=PROJ.map(p=>`<option value="${p.codigo}">${esc(p.nome)}</option>`).join('');
+  let h='';
+  h+=`<div class="panel"><div class="p-body"><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:7px"><span>Mandato 2025–2028</span><span style="color:var(--tsec);font-weight:500">${mp}% decorrido · ${rest} meses restantes</span></div><div class="bar" style="width:100%;height:9px"><i style="width:${mp}%;background:var(--azul)"></i></div></div></div>`;
+  h+=`<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    <div class="kpi"><div class="k-top"><div class="k-lbl">Cobertura do plano</div><div class="k-ic" style="background:var(--azul-cl);color:var(--azul)">◈</div></div><div class="k-val">${cob}%</div><div class="k-sub">${com} de ${tot} promessas</div></div>
+    <div class="kpi"><div class="k-top"><div class="k-lbl">Em execução</div><div class="k-ic" style="background:var(--ambar-cl);color:var(--ambar)">▤</div></div><div class="k-val">${exec}</div><div class="k-sub">com projeto ativo</div></div>
+    <div class="kpi"><div class="k-top"><div class="k-lbl">Entregues</div><div class="k-ic" style="background:var(--verde-cl);color:var(--verde-esc)">✓</div></div><div class="k-val">${ent}</div><div class="k-sub">concluídas</div></div>
+    <div class="kpi"><div class="k-top"><div class="k-lbl">Sem projeto</div><div class="k-ic" style="background:#eef1f6;color:#5f5e5a">!</div></div><div class="k-val">${tot-com}</div><div class="k-sub">a priorizar</div></div></div>`;
+  h+=`<div class="panel"><div class="p-head"><h3>Metas do Plano de Governo</h3><span class="pill">${METAS.length} indicadores</span></div><div class="p-body">`+METAS.map(m=>{
+    const pct=m.valor_alvo?Math.min(100,Math.round(m.valor_atual/m.valor_alvo*100)):0;
+    const cor=pct>=80?'#1d9e75':pct>=45?'#d9932a':'#d64545';
+    return `<div class="srow"><div class="s-nm">${esc(m.indicador)}<small>Meta ${fmtNum(m.valor_alvo)} ${esc(m.unidade||'')} até ${m.prazo_ano} · atual ${fmtNum(m.valor_atual)}${m.fonte?' · '+esc(m.fonte):''}</small></div>
+      <div class="bar"><i style="width:${pct}%;background:${cor}"></i></div><div class="s-pct" style="color:${cor}">${pct}%</div>
+      ${isGlobal()?`<input type="number" class="meta-in" data-meta="${m.id}" value="${m.valor_atual}" title="Atualizar valor atual" style="width:82px;border:1px solid var(--linha);border-radius:7px;padding:6px 8px;font-size:12px;font-family:inherit">`:''}</div>`;
+  }).join('')+`</div></div>`;
+  const pilares=['Pessoas','Cidade','Gestão'];
+  h+=pilares.map(pil=>{
+    const ps=proms.filter(p=>p.pilar===pil);const c=ps.filter(p=>p.st!=='sem_projeto').length;
+    return `<div class="panel"><div class="p-head"><h3>${pil}</h3><span class="pill">${c}/${ps.length} com projeto</span></div><div class="p-body">${ps.map(p=>`
+      <div class="srow"><div class="s-nm"><b style="color:#4e2270">${p.codigo}</b> ${esc(p.titulo)}<small>${p.links.length?esc(p.links.map(x=>x.nome).join(' · ')).slice(0,90):'nenhum projeto vinculado'}</small></div>
+      ${p.links.length?`<div class="bar"><i style="width:${p.avg}%;background:${STP[p.st].c}"></i></div><div class="s-pct" style="color:${STP[p.st].t}">${p.avg}%</div>`:''}
+      <span class="tag" style="background:${STP[p.st].b};color:${STP[p.st].t}">${STP[p.st].l}</span></div>
+      ${isGlobal()?`<div style="display:flex;gap:8px;padding:2px 0 10px 0;border-bottom:1px solid var(--linha2)">
+        <select class="vinc-sel" data-prom="${p.id}" style="flex:1;max-width:280px;border:1px solid var(--linha);border-radius:7px;padding:6px 8px;font-size:12px"><option value="">+ vincular projeto…</option>${projOpts}</select>
+        ${p.st==='sem_projeto'?`<button class="btn ghost sm" data-pauta="${p.id}" data-cod="${p.codigo}" data-tit="${esc(p.titulo)}" data-pil="${pil}">Gerar pauta</button>`:''}</div>`:''}`).join('')}</div></div>`;
+  }).join('');
+  $('#planoWrap').innerHTML=h;
+  document.querySelectorAll('.meta-in').forEach(el=>el.addEventListener('change',async e=>{
+    const {error}=await gov.from('meta_plano').update({valor_atual:Number(e.target.value)}).eq('id',e.target.dataset.meta);
+    if(error)alert('Sem permissão para atualizar.');else loadPlano();
+  }));
+  document.querySelectorAll('.vinc-sel').forEach(el=>el.addEventListener('change',async e=>{
+    const cod=e.target.value;if(!cod)return;const pj=PROJ.find(x=>x.codigo===cod);if(!pj)return;
+    const {data:pjrow}=await gov.from('projeto').select('id').eq('codigo',cod).maybeSingle();
+    const {error}=await gov.from('promessa_projeto').insert({promessa_id:e.target.dataset.prom,projeto_id:pjrow.id});
+    if(error)alert('Não foi possível vincular: '+error.message);else loadPlano();
+  }));
+  document.querySelectorAll('[data-pauta]').forEach(el=>el.addEventListener('click',async e=>{
+    const b=e.target;
+    const {error}=await gov.from('pauta').insert({titulo:'Plano '+b.dataset.cod+': '+b.dataset.tit,descricao:'Promessa do Plano de Governo ('+b.dataset.pil+') ainda sem projeto vinculado. Priorizar transformação em projeto.',urgencia:'alta',categoria:'Plano de Governo',status:'aberta'});
+    if(error)alert('Não foi possível gerar a pauta: '+error.message);else{alert('Pauta criada no Radar do Prefeito.');loadPautas();}
+  }));
+}
 async function gerarLivro(){
   const btn=$('#btnGerarLivro');const old=btn.textContent;btn.textContent='Gerando…';btn.disabled=true;
-  const [prog,org]=await Promise.all([gov.from('programa_ppa').select('valor_previsto'),gov.from('orcamento_orgao').select('valor_fixado')]);
+  const [prog,org,prm,mtp]=await Promise.all([gov.from('programa_ppa').select('valor_previsto'),gov.from('orcamento_orgao').select('valor_fixado'),gov.from('promessa').select('pilar,promessa_projeto(projeto:projeto_id(status))'),gov.from('meta_plano').select('indicador,unidade,valor_alvo,valor_atual,prazo_ano')]);
+  const proms2=(prm.data||[]).map(p=>{const l=(p.promessa_projeto||[]).map(x=>x.projeto).filter(Boolean);let st='sem';if(l.length)st=l.every(x=>x.status==='concluido')?'ent':'exec';return {pilar:p.pilar,st};});
+  const pTot=proms2.length,pCom=proms2.filter(x=>x.st!=='sem').length,cobPlano=pTot?Math.round(pCom/pTot*100):0;
+  const byPil=['Pessoas','Cidade','Gestão'].map(pl=>{const g=proms2.filter(x=>x.pilar===pl);return {pl,tot:g.length,com:g.filter(x=>x.st!=='sem').length};});
+  const metasArr=mtp.data||[];
   const loaTotal=(org.data||[]).reduce((a,b)=>a+Number(b.valor_fixado||0),0);
   const progN=(prog.data||[]).length, ppaTotal=(prog.data||[]).reduce((a,b)=>a+Number(b.valor_previsto||0),0);
   const t=PROJ.length,ok=PROJ.filter(p=>p.status==='no_prazo'||p.status==='concluido').length,at=PROJ.filter(p=>p.status==='em_atencao').length,cr=PROJ.filter(p=>p.status==='critico').length,con=PROJ.filter(p=>p.status==='concluido').length;
@@ -429,18 +506,23 @@ async function gerarLivro(){
   <h4>Leitura</h4><p>A carteira reúne <b>${t}</b> projetos prioritários distribuídos em <b>${secs}</b> secretarias, com <b>${ok}</b> no prazo ou concluídos e <b>${cr}</b> em situação crítica que requerem atenção imediata do Gabinete. O Plano Plurianual 2026–2029 organiza <b>${progN}</b> programas de governo, totalizando <b>${brlM(ppaTotal)}</b> previstos, dos quais <b>${brlM(emp)}</b> já foram empenhados nos projetos prioritários.</p>${foot(3)}</div>`);
   pages.push(`<div class="page"><h3 class="sec">4. Mapa do Governo</h3><p>Distribuição dos projetos prioritários por eixo de governo, com a cor indicando o status de execução (verde: no prazo; âmbar: em atenção; vermelho: crítico; roxo: não iniciado).</p>
   ${Object.entries(byE).map(([n,o])=>`<div class="eixogrp"><div class="eh" style="border-color:${o.cor}">${esc(n)} — ${o.ps.length} projeto(s)</div><div class="chips2">${o.ps.map(p=>`<span class="chip2" style="background:${CR[p.status]}">${esc(p.nome)} · ${p.progresso_fisico}%</span>`).join('')}</div></div>`).join('')}${foot(4)}</div>`);
+  pages.push(`<div class="page"><h3 class="sec">5. Cumprimento do Plano de Governo</h3>
+  <p>Conciliação entre as 45 diretrizes do Plano de Governo "Todos por Santa Maria!" (2025–2028) e os projetos em execução. Cobertura atual: <b>${cobPlano}%</b> das promessas já contam com projeto vinculado.</p>
+  <div class="kgrid">${byPil.map(b=>`<div class="kbox"><div class="v">${b.com}/${b.tot}</div><div class="l">${esc(b.pl)} — com projeto</div></div>`).join('')}</div>
+  <h4>Metas quantitativas do plano</h4>
+  <table class="btable"><thead><tr><th>Indicador</th><th style="text-align:right">Atual</th><th style="text-align:right">Meta</th><th style="text-align:right">%</th><th style="text-align:right">Prazo</th></tr></thead><tbody>${metasArr.map(m=>{const pct=m.valor_alvo?Math.min(100,Math.round(m.valor_atual/m.valor_alvo*100)):0;return `<tr><td>${esc(m.indicador)}</td><td style="text-align:right">${fmtNum(m.valor_atual)} ${esc(m.unidade||'')}</td><td style="text-align:right">${fmtNum(m.valor_alvo)}</td><td style="text-align:right">${pct}%</td><td style="text-align:right">${m.prazo_ano}</td></tr>`}).join('')}</tbody></table>${foot(5)}</div>`);
   const prows=PROJ.map(p=>`<tr><td>${esc(p.nome)}</td><td>${p.secretaria?.sigla||''}</td><td>${p.prioridade||''}</td><td><span class="bdot" style="background:${CR[p.status]}"></span>${SL[p.status]}</td><td style="text-align:right">${p.progresso_fisico}%</td><td style="text-align:right">${brlM(p.orc)}</td></tr>`);
-  let pg=5;const per=26;
+  let pg=6;const per=26;
   for(let i=0;i<prows.length;i+=per){
-    pages.push(`<div class="page"><h3 class="sec">5. Projetos de Governo${prows.length>per?' (cont.)':''}</h3><table class="btable"><thead><tr><th>Projeto</th><th>Sec.</th><th>Prior.</th><th>Status</th><th style="text-align:right">Físico</th><th style="text-align:right">Orçado</th></tr></thead><tbody>${prows.slice(i,i+per).join('')}</tbody></table>${foot(pg++)}</div>`);
+    pages.push(`<div class="page"><h3 class="sec">6. Projetos de Governo${prows.length>per?' (cont.)':''}</h3><table class="btable"><thead><tr><th>Projeto</th><th>Sec.</th><th>Prior.</th><th>Status</th><th style="text-align:right">Físico</th><th style="text-align:right">Orçado</th></tr></thead><tbody>${prows.slice(i,i+per).join('')}</tbody></table>${foot(pg++)}</div>`);
   }
   const social=['Saúde','Educação','Desenvolvimento Social'];
   const socialProj=PROJ.filter(p=>social.includes(p.eixo?.nome));
   const socialOrc=socialProj.reduce((a,p)=>a+p.orc,0);
-  pages.push(`<div class="page"><h3 class="sec">6. Impactos Sociais</h3><p>Os projetos prioritários alcançam diretamente a população de Santa Maria, com foco nas áreas de maior impacto social — saúde, educação e assistência.</p>
+  pages.push(`<div class="page"><h3 class="sec">7. Impactos Sociais</h3><p>Os projetos prioritários alcançam diretamente a população de Santa Maria, com foco nas áreas de maior impacto social — saúde, educação e assistência.</p>
   <div class="kgrid">${kb(benef.toLocaleString('pt-BR'),'Beneficiários diretos estimados')}${kb(socialProj.length,'Projetos nas áreas sociais')}${kb(brlM(socialOrc),'Investimento social')}</div>
   <h4>Por área social</h4>${social.map(s=>{const ps=PROJ.filter(p=>p.eixo?.nome===s);return `<p><b>${s}:</b> ${ps.length} projeto(s), ${brlM(ps.reduce((a,p)=>a+p.orc,0))} orçados${ps.some(p=>p.beneficiarios)?', beneficiando '+ps.reduce((a,p)=>a+(p.beneficiarios||0),0).toLocaleString('pt-BR')+' pessoas':''}.</p>`}).join('')}${foot(pg++)}</div>`);
-  pages.push(`<div class="page"><h3 class="sec">7. Considerações Finais</h3><p>Este Livro do Governo é gerado automaticamente pela Plataforma de Governança e reflete o estado da gestão na data de emissão. A cada nova geração, os números, projetos e pautas são atualizados a partir da base de dados oficial, garantindo um documento sempre fiel à realidade.</p><p>O acompanhamento contínuo das pautas priorizadas, aliado à execução transparente do orçamento, é o compromisso desta gestão com a população de Santa Maria.</p>
+  pages.push(`<div class="page"><h3 class="sec">8. Considerações Finais</h3><p>Este Livro do Governo é gerado automaticamente pela Plataforma de Governança e reflete o estado da gestão na data de emissão. A cada nova geração, os números, projetos e pautas são atualizados a partir da base de dados oficial, garantindo um documento sempre fiel à realidade.</p><p>O acompanhamento contínuo das pautas priorizadas, aliado à execução transparente do orçamento, é o compromisso desta gestão com a população de Santa Maria.</p>
   <div style="margin-top:34mm;text-align:center"><div style="border-top:1px solid #1c2431;width:72mm;margin:0 auto;padding-top:6px;font-weight:600">Prefeitura Municipal de Santa Maria</div></div>${foot(pg++)}</div>`);
   $('#bookContent').innerHTML=pages.join('');
   $('#livroOverlay').classList.add('on');window.scrollTo(0,0);
