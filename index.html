@@ -180,6 +180,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 
       <section class="view on" id="v-painel">
         <div class="ph"><h2 id="painelTit">Painel do Prefeito</h2><p id="painelSub">Visão consolidada da gestão</p></div>
+        <div id="termometro"></div>
         <div class="livro-cta" id="livroCta"><button class="btn" id="btnGerarLivro">▤ Gerar Livro do Governo (PDF)</button></div>
         <div id="radar"></div>
         <div class="kpis" id="kpis"><div class="loading">Carregando…</div></div>
@@ -266,7 +267,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL='https://phnthshtuyvchhwhihfh.supabase.co';
 const SUPABASE_KEY='sb_publishable_8T6ibUn0rIagthojKeoM-A_uVz64h2a';
 const gov=createClient(SUPABASE_URL,SUPABASE_KEY,{db:{schema:'governanca'}});
-let ME=null, PROJ=[], PAUTAS=[];
+let ME=null, PROJ=[], PAUTAS=[], DEMS=[];
 const $=s=>document.querySelector(s);
 const UR={critica:'#b03030',alta:'#b5701a',media:'#0b4f8a'};
 const UL={critica:'Crítica',alta:'Alta',media:'Média'};
@@ -283,6 +284,42 @@ const stLabel={nova:'Nova',recebida:'Recebida',em_execucao:'Em execução',concl
 const meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function isGlobal(){return ME.papel==='prefeito'||ME.papel==='governanca'}
+function termLabel(v){if(v<40)return{l:'Crítico',c:'#d64545'};if(v<60)return{l:'Atenção',c:'#d9932a'};if(v<75)return{l:'Regular',c:'#0b4f8a'};if(v<90)return{l:'Bom',c:'#1d9e75'};return{l:'Excelente',c:'#0f6e56'};}
+function computeTermometro(){
+  const proj=PROJ||[];
+  const stScore={concluido:100,no_prazo:85,em_atencao:55,nao_iniciado:40,critico:20};
+  const execS=proj.length?Math.round(proj.reduce((a,p)=>a+(stScore[p.status]??50),0)/proj.length):0;
+  const promTot=(PROMS||[]).length,promCom=(PROMS||[]).filter(p=>p.st&&p.st!=='sem_projeto').length;
+  const cob=promTot?promCom/promTot*100:0;
+  const metaAvg=(METAS||[]).length?(METAS).reduce((a,m)=>a+(m.valor_alvo?Math.min(100,m.valor_atual/m.valor_alvo*100):0),0)/METAS.length:0;
+  const planoS=promTot?Math.round((cob+metaAvg)/2):0;
+  const orc=proj.reduce((a,p)=>a+(p.orc||0),0),emp=proj.reduce((a,p)=>a+(p.emp||0),0);
+  const yf=Math.min(1,Math.max(0.05,(Date.now()-new Date(2026,0,1))/(new Date(2026,11,31)-new Date(2026,0,1))));
+  const orcS=orc?Math.round(Math.min(100,(emp/orc)/Math.max(0.15,yf)*100)):0;
+  const projCrit=proj.filter(p=>p.status==='critico').length;
+  const pautCrit=(PAUTAS||[]).filter(p=>p.urgencia==='critica'&&p.status!=='resolvida').length;
+  const riscoS=Math.max(0,Math.round(100-(proj.length?projCrit/proj.length*100:0)*0.9-pautCrit*10));
+  const dtot=(DEMS||[]).length,dres=(DEMS||[]).filter(d=>d.status==='concluida').length,dexec=(DEMS||[]).filter(d=>d.status==='em_execucao'||d.status==='recebida').length;
+  const demS=dtot?Math.min(100,Math.round((dres*100+dexec*55)/dtot)):100;
+  const dims=[{n:'Execução dos projetos',s:execS,w:0.30},{n:'Cumprimento do plano',s:planoS,w:0.25},{n:'Execução orçamentária',s:orcS,w:0.20},{n:'Gestão de riscos',s:riscoS,w:0.15},{n:'Atendimento de demandas',s:demS,w:0.10}];
+  const overall=Math.round(dims.reduce((a,d)=>a+d.s*d.w,0));
+  return {overall,dims};
+}
+function renderTermometro(){
+  const el=$('#termometro');if(!el)return;
+  const t=computeTermometro(),tl=termLabel(t.overall);
+  const L=251.3,val=Math.max(0,t.overall/100*L);
+  const gauge=`<svg viewBox="0 0 200 118" width="210" height="124" aria-label="Índice ${t.overall}">
+    <path d="M20 100 A80 80 0 0 0 180 100" fill="none" stroke="#eef1f6" stroke-width="16" stroke-linecap="round"/>
+    <path d="M20 100 A80 80 0 0 0 180 100" fill="none" stroke="${tl.c}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${val} 1000"/>
+    <text x="100" y="86" text-anchor="middle" font-size="40" font-weight="800" fill="${tl.c}">${t.overall}</text>
+    <text x="100" y="108" text-anchor="middle" font-size="13" font-weight="700" fill="${tl.c}">${tl.l}</text></svg>`;
+  const dims=t.dims.map(d=>{const c=termLabel(d.s).c;return `<div class="srow"><div class="s-nm">${d.n}<small>peso ${Math.round(d.w*100)}%</small></div><div class="bar" style="width:150px"><i style="width:${d.s}%;background:${c}"></i></div><div class="s-pct" style="color:${c}">${d.s}</div></div>`}).join('');
+  el.innerHTML=`<div class="panel"><div class="p-head"><h3>Termômetro do Governo</h3><span class="pill" style="background:${tl.c}22;color:${tl.c}">índice ${t.overall}/100 · ${tl.l}</span></div>
+  <div class="p-body" style="display:grid;grid-template-columns:minmax(0,220px) 1fr;gap:20px;align-items:center">
+  <div style="text-align:center">${gauge}<div style="font-size:11px;color:var(--tsec)">Índice Geral de Governo</div></div>
+  <div>${dims}</div></div></div>`;
+}
 
 async function boot(){const {data:{session}}=await gov.auth.getSession();session?loadMe():showLogin();}
 function showLogin(){$('#login').classList.remove('hide');$('#app').classList.add('hide');}
@@ -338,6 +375,7 @@ function renderPainel(){
     const c=pr==='P1'?'#8f2727':pr==='P2'?'#854f0b':'#073b68';
     return `<div class="tile" style="background:${c};min-height:78px"><span class="pr">${byP[pr].length}</span><h5>Prioridade ${pr}</h5><div class="m" style="margin-top:auto">${byP[pr].length} projeto(s) priorizado(s)</div></div>`;
   }).join('')+'</div>';
+  renderTermometro();
 }
 function renderMapa(){
   const byE={};PROJ.forEach(p=>{const k=p.eixo?.nome||'Sem eixo';(byE[k]=byE[k]||{cor:p.eixo?.cor||'#64748b',ps:[]}).ps.push(p)});
@@ -362,6 +400,7 @@ function renderGantt(){
 async function loadDemandas(){
   const {data}=await gov.from('demanda').select('id,titulo,descricao,direcao,status,prioridade,created_at').order('created_at',{ascending:false});
   const el=$('#listaDemandas');const list=data||[];
+  DEMS=list;renderTermometro();
   if(!list.length){el.innerHTML='<div class="empty">Nenhuma demanda.</div>';return;}
   el.innerHTML=list.map(d=>`<div class="row"><div class="r-main"><div class="r-t">${esc(d.titulo)}</div><div class="r-s">${d.direcao==='governo_para_secretaria'?'Governo → Secretaria':'Secretaria → Prefeito'}${d.prioridade?' · '+d.prioridade:''}${d.descricao?' · '+esc(d.descricao).slice(0,70):''}</div></div><span class="tag" style="background:#eef1f6;color:#3a4a63">${stLabel[d.status]}</span>${statusSel(d)}</div>`).join('');
   el.querySelectorAll('select[data-id]').forEach(s=>s.addEventListener('change',onStatus));
@@ -391,7 +430,7 @@ async function loadSecretarias(){
 async function loadPautas(){
   const {data}=await gov.from('pauta').select('id,titulo,descricao,urgencia,status,categoria,prazo,secretaria:secretaria_id(sigla)');
   PAUTAS=(data||[]).sort((a,b)=>sev(a)-sev(b));
-  renderRadar();renderPautasView();
+  renderRadar();renderPautasView();renderTermometro();
 }
 function renderRadar(){
   const el=$('#radar');const open=PAUTAS.filter(p=>p.status!=='resolvida');
@@ -428,7 +467,7 @@ async function loadPlano(){
     return {...p,links,avg,st};
   });
   METAS=mt.data||[];
-  renderPlano();
+  renderPlano();renderTermometro();
 }
 function renderPlano(){
   const proms=PROMS;
@@ -497,13 +536,15 @@ async function gerarLivro(){
   const byE={};PROJ.forEach(p=>{const k=p.eixo?.nome||'Sem eixo';(byE[k]=byE[k]||{cor:p.eixo?.cor||'#64748b',ps:[]}).ps.push(p)});
   const foot=n=>`<div class="pfoot"><span>Livro do Governo · Prefeitura de Santa Maria</span><span>Gerado em ${hoje} · pág. ${n}</span></div>`;
   const kb=(v,l)=>`<div class="kbox"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+  const _t=computeTermometro(),_tl=termLabel(_t.overall);
   const pages=[];
   pages.push(`<div class="page cover"><div class="cover-top"><div style="background:#fff;border-radius:12px;padding:16px 24px;margin-bottom:26px"><img src="logo.png" alt="Prefeitura de Santa Maria" style="height:66px;display:block;margin:0"></div><div class="kick">Livro do Governo</div><h1>Gestão Municipal 2025–2028</h1><h2>Prefeitura Municipal de Santa Maria</h2></div><div class="cover-bar"></div><div class="cover-foot"><b>Relatório consolidado da gestão</b><br>Pautas, projetos, orçamento e impactos sociais · Gerado em ${hoje}</div></div>`);
   pages.push(`<div class="page"><h3 class="sec">1. Objetivo</h3><p>A Plataforma de Governança da Prefeitura Municipal de Santa Maria tem como objetivo dar transparência, previsibilidade e ritmo à execução das prioridades de governo. Este Livro do Governo consolida, em um único documento e de forma automática, o retrato atualizado da gestão — as pautas priorizadas pelo Gabinete, os projetos conduzidos por cada Secretaria, os recursos orçamentários vinculados e os impactos esperados para a população de Santa Maria.</p>
   <h3 class="sec" style="margin-top:24px">2. Justificativa</h3><p>A boa gestão pública exige planejamento, acompanhamento contínuo e prestação de contas. Ao integrar o Plano Plurianual (PPA 2026–2029), a Lei Orçamentária Anual (LOA 2026) e a execução dos projetos prioritários, este documento permite ao Prefeito e à sociedade acompanhar o que foi planejado, o que está em execução e o que já foi entregue.</p><p>Mais do que um relatório, é um instrumento de decisão: evidencia avanços, sinaliza riscos e orienta correções de rota com base em dados sempre atualizados. Cada geração deste Livro reflete o estado real da gestão no momento da emissão.</p>${foot(2)}</div>`);
   pages.push(`<div class="page"><h3 class="sec">3. Indicadores da Gestão</h3>
   <div class="kgrid">${kb(t,'Projetos prioritários')}${kb(ok,'No prazo / concluídos')}${kb(at,'Em atenção')}${kb(cr,'Críticos')}${kb(con,'Concluídos')}${kb(secs,'Secretarias envolvidas')}${kb(brlM(emp),'Investido (empenhado)')}${kb(brlM(orc),'Orçado nos projetos')}${kb(brlM(loaTotal),'LOA 2026 (total)')}</div>
-  <h4>Leitura</h4><p>A carteira reúne <b>${t}</b> projetos prioritários distribuídos em <b>${secs}</b> secretarias, com <b>${ok}</b> no prazo ou concluídos e <b>${cr}</b> em situação crítica que requerem atenção imediata do Gabinete. O Plano Plurianual 2026–2029 organiza <b>${progN}</b> programas de governo, totalizando <b>${brlM(ppaTotal)}</b> previstos, dos quais <b>${brlM(emp)}</b> já foram empenhados nos projetos prioritários.</p>${foot(3)}</div>`);
+  <h4>Leitura</h4><p>A carteira reúne <b>${t}</b> projetos prioritários distribuídos em <b>${secs}</b> secretarias, com <b>${ok}</b> no prazo ou concluídos e <b>${cr}</b> em situação crítica que requerem atenção imediata do Gabinete. O Plano Plurianual 2026–2029 organiza <b>${progN}</b> programas de governo, totalizando <b>${brlM(ppaTotal)}</b> previstos, dos quais <b>${brlM(emp)}</b> já foram empenhados nos projetos prioritários.</p>
+  <h4>Termômetro do Governo</h4><p>Índice geral de governo: <b style="color:${_tl.c}">${_t.overall}/100 — ${_tl.l}</b>. Composição por dimensão: ${_t.dims.map(d=>esc(d.n)+' <b>'+d.s+'</b>').join('; ')}.</p>${foot(3)}</div>`);
   pages.push(`<div class="page"><h3 class="sec">4. Mapa do Governo</h3><p>Distribuição dos projetos prioritários por eixo de governo, com a cor indicando o status de execução (verde: no prazo; âmbar: em atenção; vermelho: crítico; roxo: não iniciado).</p>
   ${Object.entries(byE).map(([n,o])=>`<div class="eixogrp"><div class="eh" style="border-color:${o.cor}">${esc(n)} — ${o.ps.length} projeto(s)</div><div class="chips2">${o.ps.map(p=>`<span class="chip2" style="background:${CR[p.status]}">${esc(p.nome)} · ${p.progresso_fisico}%</span>`).join('')}</div></div>`).join('')}${foot(4)}</div>`);
   pages.push(`<div class="page"><h3 class="sec">5. Cumprimento do Plano de Governo</h3>
