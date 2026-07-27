@@ -127,6 +127,17 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .eixogrp{margin-bottom:11px}.eixogrp .eh{font-weight:700;color:#12213c;font-size:12.5px;margin-bottom:6px;border-left:5px solid;padding-left:8px}
 .chips2{display:flex;flex-wrap:wrap;gap:6px}.chip2{font-size:10px;padding:4px 9px;border-radius:6px;color:#fff;font-weight:600}
 .pfoot{position:absolute;bottom:9mm;left:18mm;right:18mm;border-top:1px solid #e5e9f0;padding-top:5px;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between}
+.fic-head{background:#662d91;color:#fff;border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.fic-head .plate{background:#fff;border-radius:8px;padding:6px 10px;flex-shrink:0}
+.fic-head .plate img{height:32px;display:block}
+.fic-head h2{font-size:17px;font-weight:800;margin:0;line-height:1.15}
+.fic-head .sub{font-size:11.5px;color:#e3d4f2;margin-top:2px}
+.fic-nota{display:flex;align-items:center;gap:14px;border:1px solid #e5e9f0;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+.fic-nota .dims{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
+.fic-nota .dl{display:flex;justify-content:space-between;font-size:10.5px;border-bottom:1px dotted #e5e9f0;padding:2px 0}
+.enc-line{border-bottom:1px solid #cbd2dc;height:20px}
+.rel-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--linha2)}
+.rel-row:last-child{border:none}.rel-row .rr-m{flex:1}
 @media print{
   @page{size:A4;margin:0}
   html,body{background:#fff}
@@ -167,6 +178,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       <a data-v="demandas"><span class="ic">⇄</span> Demandas</a>
       <a data-v="projetos"><span class="ic">▣</span> Projetos</a>
       <a data-v="secretarias" id="navSec"><span class="ic">◔</span> Secretarias</a>
+      <a data-v="relatorios" id="navRel"><span class="ic">◨</span> Relatórios</a>
     </nav>
     <div class="side-foot"><button class="btn ghost sm block" id="btnLogout">Sair</button></div>
   </aside>
@@ -248,6 +260,12 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       <section class="view" id="v-secretarias">
         <div class="ph"><h2>Secretarias</h2><p>Órgãos e orçamento fixado (LOA 2026).</p></div>
         <div class="panel"><div class="p-body" id="listaSecretarias"><div class="loading">Carregando…</div></div></div>
+      </section>
+
+      <section class="view" id="v-relatorios">
+        <div class="ph"><h2>Relatórios</h2><p>Fichas executivas exportáveis para as reuniões de feedback do Prefeito com cada Secretário.</p></div>
+        <div class="panel"><div class="p-head"><h3>Ficha do Governo</h3></div><div class="p-body"><div class="rel-row"><div class="rr-m"><div class="r-t">Ficha Executiva — Governo Geral</div><div class="r-s">Visão consolidada: termômetro, indicadores, plano e alertas</div></div><button class="btn sm" id="btnFichaGov">Gerar PDF</button></div></div></div>
+        <div class="panel"><div class="p-head"><h3>Ficha por Secretaria</h3><span class="pill">para o feedback do Prefeito</span></div><div class="p-body" id="fichaSecList"><div class="loading">Carregando…</div></div></div>
       </section>
     </div>
   </div>
@@ -338,7 +356,7 @@ async function loadMe(){
   renderId();showApp();
   await loadProjetos();
   renderPainel();renderMapa();renderGantt();
-  loadPautas();loadPlano();loadDemandas();renderProjetos();loadSecretarias();prepForm();
+  loadPautas();loadPlano();loadDemandas();renderProjetos();loadSecretarias();loadRelatorios();prepForm();
 }
 function renderId(){
   const ini=ME.nome.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -347,6 +365,7 @@ function renderId(){
   if(isGlobal()){$('#scope').innerHTML='Você tem <b>visão global</b> — todas as secretarias.';$('#painelTit').textContent='Painel do Prefeito';}
   else{$('#scope').innerHTML='Ambiente da <b>'+(ME.secretaria?.nome||'sua secretaria')+'</b> — você vê apenas a sua pasta.';$('#painelTit').textContent='Meu Painel';$('#navSec').classList.add('hide');}
   $('#livroCta').style.display=isGlobal()?'':'none';
+  $('#navRel').style.display=isGlobal()?'':'none';
 }
 async function loadProjetos(){
   const {data}=await gov.from('projeto').select('codigo,nome,status,prioridade,progresso_fisico,data_inicio,data_fim_prevista,secretaria:secretaria_id(sigla,nome),eixo:eixo_id(nome,cor),exec:execucao_orcamentaria(valor_orcado,empenhado)').order('prioridade');
@@ -518,6 +537,84 @@ function renderPlano(){
     const {error}=await gov.from('pauta').insert({titulo:'Plano '+b.dataset.cod+': '+b.dataset.tit,descricao:'Promessa do Plano de Governo ('+b.dataset.pil+') ainda sem projeto vinculado. Priorizar transformação em projeto.',urgencia:'alta',categoria:'Plano de Governo',status:'aberta'});
     if(error)alert('Não foi possível gerar a pauta: '+error.message);else{alert('Pauta criada no Radar do Prefeito.');loadPautas();}
   }));
+}
+function gaugeSVG(v,w){const tl=termLabel(v);const L=251.3,val=Math.max(0,v/100*L);return `<svg viewBox="0 0 200 118" width="${w||150}"><path d="M20 100 A80 80 0 0 0 180 100" fill="none" stroke="#eef1f6" stroke-width="16" stroke-linecap="round"/><path d="M20 100 A80 80 0 0 0 180 100" fill="none" stroke="${tl.c}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${val} 1000"/><text x="100" y="86" text-anchor="middle" font-size="40" font-weight="800" fill="${tl.c}">${v}</text><text x="100" y="108" text-anchor="middle" font-size="13" font-weight="700" fill="${tl.c}">${tl.l}</text></svg>`;}
+function scoreScoped(projs,pautas,dems){
+  const stS={concluido:100,no_prazo:85,em_atencao:55,nao_iniciado:40,critico:20};
+  const execS=projs.length?Math.round(projs.reduce((a,p)=>a+(stS[p.status]??50),0)/projs.length):0;
+  const orc=projs.reduce((a,p)=>a+(p.orc||0),0),emp=projs.reduce((a,p)=>a+(p.emp||0),0);
+  const yf=Math.min(1,Math.max(0.05,(Date.now()-new Date(2026,0,1))/(new Date(2026,11,31)-new Date(2026,0,1))));
+  const orcS=orc?Math.round(Math.min(100,(emp/orc)/Math.max(0.15,yf)*100)):0;
+  const projCrit=projs.filter(p=>p.status==='critico').length;
+  const pautCrit=(pautas||[]).filter(p=>p.urgencia==='critica'&&p.status!=='resolvida').length;
+  const riscoS=Math.max(0,Math.round(100-(projs.length?projCrit/projs.length*100:0)*0.9-pautCrit*10));
+  const dtot=(dems||[]).length,dres=(dems||[]).filter(d=>d.status==='concluida').length,dexec=(dems||[]).filter(d=>d.status==='em_execucao'||d.status==='recebida').length;
+  const demS=dtot?Math.min(100,Math.round((dres*100+dexec*55)/dtot)):100;
+  const overall=Math.round(execS*0.45+orcS*0.25+riscoS*0.20+demS*0.10);
+  return {overall,execS,orcS,riscoS,demS};
+}
+async function loadRelatorios(){
+  if(!isGlobal())return;
+  const {data}=await gov.from('secretaria').select('id,sigla,nome,tipo').order('nome');
+  const secs=(data||[]).filter(s=>s.tipo==='secretaria');
+  $('#fichaSecList').innerHTML=secs.map(s=>`<div class="rel-row"><div class="rr-m"><div class="r-t">${esc(s.nome)}</div><div class="r-s">${s.sigla}</div></div><button class="btn ghost sm" data-fic="${s.id}">Gerar PDF</button></div>`).join('');
+  document.querySelectorAll('[data-fic]').forEach(b=>b.addEventListener('click',()=>fichaSecretaria(b.dataset.fic)));
+  const bg=$('#btnFichaGov');if(bg)bg.onclick=fichaGoverno;
+}
+const kbx=(v,l)=>`<div class="kbox"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+function fichaGoverno(){
+  const t=computeTermometro(),proj=PROJ;
+  const tot=proj.length,ok=proj.filter(p=>p.status==='no_prazo'||p.status==='concluido').length,at=proj.filter(p=>p.status==='em_atencao').length,cr=proj.filter(p=>p.status==='critico').length;
+  const orc=proj.reduce((a,p)=>a+p.orc,0),emp=proj.reduce((a,p)=>a+p.emp,0);
+  const promTot=PROMS.length,promCom=PROMS.filter(p=>p.st!=='sem_projeto').length;
+  const crit=proj.filter(p=>p.status==='critico');
+  const pautCrit=(PAUTAS||[]).filter(p=>p.urgencia==='critica'&&p.status!=='resolvida');
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const dims=t.dims.map(d=>`<div class="dl"><span>${d.n}</span><b>${d.s}</b></div>`).join('');
+  const page=`<div class="page">
+    <div class="fic-head"><div><div style="font-size:11px;color:#c9b3e0;letter-spacing:2px;text-transform:uppercase">Ficha Executiva</div><h2>Governo Geral — Gestão 2025–2028</h2><div class="sub">Prefeitura Municipal de Santa Maria · gerado em ${hoje}</div></div><div class="plate"><img src="logo.png"></div></div>
+    <div class="fic-nota">${gaugeSVG(t.overall,140)}<div class="dims">${dims}</div></div>
+    <div class="kgrid" style="grid-template-columns:repeat(4,1fr)">${kbx(tot,'Projetos')}${kbx(ok,'No prazo')}${kbx(at,'Em atenção')}${kbx(cr,'Críticos')}${kbx(brlM(emp),'Investido')}${kbx(brlM(orc),'Orçado')}${kbx(promCom+'/'+promTot,'Promessas c/ projeto')}${kbx((PAUTAS||[]).filter(p=>p.status!=='resolvida').length,'Pautas abertas')}</div>
+    <h4>Projetos críticos</h4>
+    ${crit.length?`<table class="btable"><thead><tr><th>Projeto</th><th>Sec.</th><th style="text-align:right">Físico</th></tr></thead><tbody>${crit.map(p=>`<tr><td>${esc(p.nome)}</td><td>${p.secretaria?.sigla||''}</td><td style="text-align:right">${p.progresso_fisico}%</td></tr>`).join('')}</tbody></table>`:'<p>Sem projetos críticos no momento.</p>'}
+    ${pautCrit.length?`<h4>Pautas críticas do Radar</h4>${pautCrit.map(p=>`<p>• ${esc(p.titulo)}</p>`).join('')}`:''}
+    <h4>Encaminhamentos</h4><div class="enc-line"></div><div class="enc-line"></div><div class="enc-line"></div>
+    <div class="pfoot"><span>Ficha Executiva · Governo Geral</span><span>${hoje}</span></div></div>`;
+  $('#bookContent').innerHTML=page;$('#livroOverlay').classList.add('on');window.scrollTo(0,0);
+}
+async function fichaSecretaria(secId){
+  const [secR,liderR,projR,demR,orcR,pautR]=await Promise.all([
+    gov.from('secretaria').select('sigla,nome').eq('id',secId).maybeSingle(),
+    gov.from('servidor').select('nome').eq('secretaria_id',secId).eq('eh_secretario',true).maybeSingle(),
+    gov.from('projeto').select('codigo,nome,status,prioridade,progresso_fisico,execucao_orcamentaria(valor_orcado,empenhado),promessa_projeto(promessa:promessa_id(codigo,titulo))').eq('secretaria_id',secId),
+    gov.from('demanda').select('titulo,direcao,status,prioridade').eq('secretaria_id',secId).order('created_at',{ascending:false}),
+    gov.from('orcamento_orgao').select('valor_fixado').eq('secretaria_id',secId).maybeSingle(),
+    gov.from('pauta').select('titulo,urgencia,status').eq('secretaria_id',secId)
+  ]);
+  const sec=secR.data||{},lider=liderR.data;
+  const projs=(projR.data||[]).map(p=>({...p,orc:(p.execucao_orcamentaria||[]).reduce((a,b)=>a+Number(b.valor_orcado||0),0),emp:(p.execucao_orcamentaria||[]).reduce((a,b)=>a+Number(b.empenhado||0),0)}));
+  const dems=demR.data||[],pautas=pautR.data||[];
+  const loa=orcR.data?Number(orcR.data.valor_fixado):0;
+  const sc=scoreScoped(projs,pautas,dems);
+  const tot=projs.length,ok=projs.filter(p=>p.status==='no_prazo'||p.status==='concluido').length,at=projs.filter(p=>p.status==='em_atencao').length,cr=projs.filter(p=>p.status==='critico').length;
+  const emp=projs.reduce((a,p)=>a+p.emp,0);
+  const proms={};projs.forEach(p=>(p.promessa_projeto||[]).forEach(x=>{if(x.promessa)proms[x.promessa.codigo]=x.promessa.titulo;}));
+  const demPend=dems.filter(d=>d.direcao==='governo_para_secretaria'&&d.status!=='concluida'&&d.status!=='cancelada');
+  const pautAb=pautas.filter(p=>p.status!=='resolvida');
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const dimsHtml=`<div class="dl"><span>Execução</span><b>${sc.execS}</b></div><div class="dl"><span>Orçamento</span><b>${sc.orcS}</b></div><div class="dl"><span>Riscos</span><b>${sc.riscoS}</b></div><div class="dl"><span>Demandas</span><b>${sc.demS}</b></div>`;
+  const page=`<div class="page">
+    <div class="fic-head"><div><div style="font-size:11px;color:#c9b3e0;letter-spacing:2px;text-transform:uppercase">Ficha Executiva — Secretaria</div><h2>${esc(sec.nome||'')}</h2><div class="sub">${lider?('Secretário(a): '+esc(lider.nome)+' · '):''}gerado em ${hoje}</div></div><div class="plate"><img src="logo.png"></div></div>
+    <div class="fic-nota">${gaugeSVG(sc.overall,140)}<div class="dims">${dimsHtml}</div></div>
+    <div class="kgrid" style="grid-template-columns:repeat(4,1fr)">${kbx(tot,'Projetos')}${kbx(ok,'No prazo')}${kbx(at,'Em atenção')}${kbx(cr,'Críticos')}${kbx(brlM(loa),'Orçamento LOA')}${kbx(brlM(emp),'Empenhado')}${kbx(Object.keys(proms).length,'Promessas atendidas')}${kbx(demPend.length,'Demandas pendentes')}</div>
+    <h4>Projetos da pasta</h4>
+    ${projs.length?`<table class="btable"><thead><tr><th>Projeto</th><th>Prior.</th><th>Status</th><th style="text-align:right">Físico</th><th style="text-align:right">Orçado</th></tr></thead><tbody>${projs.map(p=>`<tr><td>${esc(p.nome)}</td><td>${p.prioridade||''}</td><td><span class="bdot" style="background:${CR[p.status]}"></span>${SL[p.status]}</td><td style="text-align:right">${p.progresso_fisico}%</td><td style="text-align:right">${brlM(p.orc)}</td></tr>`).join('')}</tbody></table>`:'<p>Nenhum projeto cadastrado para esta pasta.</p>'}
+    ${demPend.length?`<h4>Demandas do Prefeito pendentes</h4>${demPend.map(d=>`<p>• ${esc(d.titulo)} <span style="color:#64748b">(${d.prioridade||''} · ${stLabel[d.status]})</span></p>`).join('')}`:''}
+    ${Object.keys(proms).length?`<h4>Promessas do Plano de Governo atendidas</h4>${Object.entries(proms).map(([c,tt])=>`<p>• <b>${c}</b> ${esc(tt)}</p>`).join('')}`:''}
+    ${pautAb.length?`<h4>Pautas do Radar do Prefeito</h4>${pautAb.map(p=>`<p>• ${esc(p.titulo)} <span style="color:#64748b">(${UL[p.urgencia]})</span></p>`).join('')}`:''}
+    <h4>Encaminhamentos da reunião</h4><div class="enc-line"></div><div class="enc-line"></div><div class="enc-line"></div><div class="enc-line"></div>
+    <div class="pfoot"><span>Ficha Executiva · ${esc(sec.sigla||'')}</span><span>${hoje}</span></div></div>`;
+  $('#bookContent').innerHTML=page;$('#livroOverlay').classList.add('on');window.scrollTo(0,0);
 }
 async function gerarLivro(){
   const btn=$('#btnGerarLivro');const old=btn.textContent;btn.textContent='Gerando…';btn.disabled=true;
