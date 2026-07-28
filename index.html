@@ -94,6 +94,20 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .chips-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chipx{display:inline-flex;align-items:center;gap:5px;background:var(--azul-cl);color:var(--azul-esc);font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:20px}
 .chipx [data-x]{cursor:pointer;font-weight:800}
+.fichaov{position:fixed;inset:0;background:rgba(20,10,30,.55);z-index:120;display:none;overflow-y:auto;padding:28px 16px}
+.fichaov.on{display:block}
+.fichacard{background:#fff;max-width:840px;margin:0 auto;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.fichahead{background:#4e2270;color:#fff;padding:20px 24px;position:relative}
+.fichahead h2{font-size:20px;font-weight:800;margin:0;padding-right:44px;color:#fff}
+.fichahead .cod{font-family:monospace;font-size:12px;color:#d9c8ea;margin-top:3px}
+.fichahead .xbtn{position:absolute;top:16px;right:18px;cursor:pointer;font-size:20px;font-weight:800;color:#fff;background:rgba(255,255,255,.16);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.fichabody{padding:20px 24px}
+.fsec{margin-bottom:18px}
+.fsec h4{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#8a76ad;font-weight:700;border-bottom:1px solid var(--linha2);padding-bottom:5px;margin-bottom:11px}
+.fgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px 18px}
+.fitem .l{font-size:10.5px;color:var(--tsec);text-transform:uppercase;font-weight:600}
+.fitem .v{font-size:13.5px;font-weight:600;color:#12213c;margin-top:1px}
+@media(max-width:640px){.fgrid{grid-template-columns:1fr}}
 
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:20px}
 .kpi{background:#fff;border:1px solid var(--linha);border-radius:var(--radius);padding:14px 15px;box-shadow:var(--sombra)}
@@ -375,6 +389,8 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
   </div>
 </div>
 
+<div class="fichaov" id="projFichaOv"><div class="fichacard"><div class="fichahead"><div class="xbtn" id="fichaClose">×</div><h2 id="fichaTitulo"></h2><div class="cod" id="fichaCod"></div></div><div class="fichabody" id="fichaBody"></div></div></div>
+
 <div class="livro-ov" id="livroOverlay">
   <div class="livro-bar">
     <span class="sp">Livro do Governo — pré-visualização</span>
@@ -562,7 +578,8 @@ $('#btnCriarDemanda').addEventListener('click',async()=>{
 function renderProjetos(){
   renderProjetosKanban();
   const el=$('#listaProjetos');if(!PROJ.length){el.innerHTML='<div class="empty">Nenhum projeto visível.</div>';return;}
-  el.innerHTML=PROJ.map(p=>`<div class="row"><div class="r-main"><div class="r-t">${esc(p.nome)}</div><div class="r-s">${p.codigo} · ${p.secretaria?.sigla||''} · ${p.eixo?.nome||''}</div></div>${p.fase?`<span class="pill" style="background:#f0e9f6;color:#4e2270">${FASEL[p.fase]||p.fase}</span>`:''}${p.prioridade?`<span class="pill">${p.prioridade}</span>`:''}<div class="bar"><i style="width:${p.progresso_fisico}%;background:${CR[p.status]}"></i></div><span class="tag" style="background:${CRB[p.status]};color:${CRE[p.status]}">${SL[p.status]}</span></div>`).join('');
+  el.innerHTML=PROJ.map(p=>`<div class="row" data-proj="${p.id}" style="cursor:pointer"><div class="r-main"><div class="r-t">${esc(p.nome)}</div><div class="r-s">${p.codigo} · ${p.secretaria?.sigla||''} · ${p.eixo?.nome||''}</div></div>${p.fase?`<span class="pill" style="background:#f0e9f6;color:#4e2270">${FASEL[p.fase]||p.fase}</span>`:''}${p.prioridade?`<span class="pill">${p.prioridade}</span>`:''}<div class="bar"><i style="width:${p.progresso_fisico}%;background:${CR[p.status]}"></i></div><span class="tag" style="background:${CRB[p.status]};color:${CRE[p.status]}">${SL[p.status]}</span></div>`).join('');
+  el.querySelectorAll('[data-proj]').forEach(r=>r.addEventListener('click',()=>openFichaProjeto(r.dataset.proj)));
 }
 async function loadSecretarias(){
   if(!isGlobal())return;
@@ -830,6 +847,7 @@ function renderProjetosKanban(){
     const cards=items.map(p=>`<div class="kcard" draggable="true" data-id="${p.id}" style="border-left:4px solid ${CR[p.status]}"><div class="kc-t">${esc(p.nome)}</div><div class="kc-m"><span class="kc-sec">${p.secretaria?.sigla||''}</span>${p.prioridade?`<span class="kc-sec">${p.prioridade}</span>`:''}${p.orc?`<span class="kc-sec">${brlM(p.orc)}</span>`:''}</div></div>`).join('')||'<div class="kempty">—</div>';
     return `<div class="kcol"><div class="kcol-h" style="border-top:3px solid ${col}"><span>${label}</span><span class="kcount">${items.length}</span></div><div class="kcol-b" data-fase="${fk}">${cards}</div></div>`+(idx<fases.length-1?`<div class="karrow">→</div>`:``);
   }).join('')+'</div>';
+  document.querySelectorAll('#projKanban .kcard').forEach(c=>c.addEventListener('click',()=>openFichaProjeto(c.dataset.id)));
   document.querySelectorAll('#projKanban .kcard').forEach(c=>{
     c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',c.dataset.id);c.classList.add('dragging');});
     c.addEventListener('dragend',()=>c.classList.remove('dragging'));
@@ -837,8 +855,31 @@ function renderProjetosKanban(){
   document.querySelectorAll('#projKanban .kcol-b').forEach(col=>{
     col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('kover');});
     col.addEventListener('dragleave',()=>col.classList.remove('kover'));
-    col.addEventListener('drop',async e=>{e.preventDefault();col.classList.remove('kover');const id=e.dataTransfer.getData('text/plain');const fase=col.dataset.fase;const p=PROJ.find(x=>x.id===id);if(!p||(p.fase||'planejamento')===fase)return;const {error}=await gov.from('projeto').update({fase}).eq('id',id);if(error){alert('Sem permissão para mover este projeto.');}await loadProjetos();renderProjetos();});
+    col.addEventListener('drop',async e=>{e.preventDefault();col.classList.remove('kover');const id=e.dataTransfer.getData('text/plain');const fase=col.dataset.fase;const p=PROJ.find(x=>x.id===id);if(!p||(p.fase||'planejamento')===fase)return;const upd={fase};if(fase==='concluido')upd.status='concluido';const {error}=await gov.from('projeto').update(upd).eq('id',id);if(error){alert('Sem permissão para mover este projeto.');}await loadProjetos();renderProjetos();});
   });
+}
+const MODL={pregao_eletronico:'Pregão eletrônico',pregao_presencial:'Pregão presencial',concorrencia:'Concorrência',concurso:'Concurso',leilao:'Leilão',dialogo_competitivo:'Diálogo competitivo',dispensa:'Dispensa',inexigibilidade:'Inexigibilidade',adesao_ata:'Adesão a ata (SRP)',nao_se_aplica:'Não se aplica'};
+const NATL={obra:'Obra',servico:'Serviço',compra:'Compra / Aquisição',programa:'Programa',outro:'Outro'};
+async function openFichaProjeto(id){
+  const {data:p,error}=await gov.from('projeto').select('codigo,nome,descricao,status,fase,prioridade,natureza,progresso_fisico,progresso_financeiro,data_inicio,data_fim_prevista,beneficiarios,secretaria:secretaria_id(sigla,nome),lider:lider_id(nome,cargo),eixo:eixo_id(nome,cor),execucao_orcamentaria(valor_orcado,empenhado,liquidado,pago),projeto_equipe(papel,servidor:servidor_id(nome,cargo)),projeto_apoio(secretaria:secretaria_id(sigla,nome)),promessa_projeto(promessa:promessa_id(codigo,titulo)),contrato(numero_processo,numero_contrato,modalidade,empresa_nome,empresa_cnpj,valor_contratado,vigencia_inicio,vigencia_fim,fiscal:fiscal_id(nome),gestor:gestor_id(nome))').eq('id',id).maybeSingle();
+  if(error||!p){alert('Não foi possível abrir a ficha do projeto.');return;}
+  const sum=k=>(p.execucao_orcamentaria||[]).reduce((a,b)=>a+Number(b[k]||0),0);
+  const orc=sum('valor_orcado'),emp=sum('empenhado'),liq=sum('liquidado'),pag=sum('pago');
+  const c=(p.contrato||[])[0];
+  const it=(l,v)=>`<div class="fitem"><div class="l">${l}</div><div class="v">${v||'—'}</div></div>`;
+  let html=`<div class="fsec"><div class="fgrid">${it('Secretaria responsável',esc(p.secretaria?.nome||''))}${it('Líder do projeto',esc(p.lider?.nome||'—'))}${it('Eixo de governo',esc(p.eixo?.nome||'—'))}${it('Natureza',NATL[p.natureza]||'—')}${it('Prioridade',p.prioridade||'—')}${it('Fase',FASEL[p.fase]||p.fase)}${it('Status',SL[p.status]||p.status)}${it('Beneficiários',p.beneficiarios?p.beneficiarios.toLocaleString('pt-BR'):'—')}</div>${p.descricao?`<p style="margin-top:12px;font-size:13px;color:#3a4a63;line-height:1.5">${esc(p.descricao)}</p>`:''}</div>`;
+  html+=`<div class="fsec"><h4>Execução física e orçamentária</h4><div class="fgrid">${it('Progresso físico',p.progresso_fisico+'%')}${it('Progresso financeiro',p.progresso_financeiro+'%')}${it('Orçado',brl(orc))}${it('Empenhado',brl(emp))}${it('Liquidado',brl(liq))}${it('Pago',brl(pag))}${it('Início',p.data_inicio?fmtd(p.data_inicio):'—')}${it('Término previsto',p.data_fim_prevista?fmtd(p.data_fim_prevista):'—')}</div></div>`;
+  if(c){html+=`<div class="fsec"><h4>Licitação e contrato — Lei 14.133/2021</h4><div class="fgrid">${it('Modalidade',MODL[c.modalidade]||'—')}${it('Nº do processo / edital',esc(c.numero_processo||'—'))}${it('Nº do contrato',esc(c.numero_contrato||'—'))}${it('Valor contratado',c.valor_contratado?brl(c.valor_contratado):'—')}${it('Empresa executora',esc(c.empresa_nome||'—'))}${it('CNPJ da contratada',esc(c.empresa_cnpj||'—'))}${it('Fiscal do contrato',esc(c.fiscal?.nome||'—'))}${it('Gestor do contrato',esc(c.gestor?.nome||'—'))}${it('Vigência',(c.vigencia_inicio?fmtd(c.vigencia_inicio):'—')+' a '+(c.vigencia_fim?fmtd(c.vigencia_fim):'—'))}</div></div>`;}
+  const eq=(p.projeto_equipe||[]);
+  if(eq.length)html+=`<div class="fsec"><h4>Equipe do projeto</h4><div class="fgrid">${eq.map(e=>it(e.papel||'Equipe',esc(e.servidor?.nome||'—'))).join('')}</div></div>`;
+  const ap=(p.projeto_apoio||[]).map(a=>a.secretaria?.sigla).filter(Boolean);
+  if(ap.length)html+=`<div class="fsec"><h4>Secretarias apoiadoras</h4><div class="chips-wrap">${ap.map(s=>`<span class="chipx">${esc(s)}</span>`).join('')}</div></div>`;
+  const pr=(p.promessa_projeto||[]).map(x=>x.promessa).filter(Boolean);
+  if(pr.length)html+=`<div class="fsec"><h4>Promessas do Plano de Governo atendidas</h4>${pr.map(x=>`<div style="font-size:12.5px;margin:4px 0"><b style="color:#4e2270">${x.codigo}</b> ${esc(x.titulo)}</div>`).join('')}</div>`;
+  $('#fichaBody').innerHTML=html;
+  $('#fichaTitulo').textContent=p.nome;
+  $('#fichaCod').textContent=(p.codigo||'')+' · '+(FASEL[p.fase]||'');
+  $('#projFichaOv').classList.add('on');window.scrollTo(0,0);
 }
 async function gerarLivro(){
   const btn=$('#btnGerarLivro');const old=btn.textContent;btn.textContent='Gerando…';btn.disabled=true;
@@ -909,6 +950,8 @@ $('#btnImprimir').addEventListener('click',()=>window.print());
 document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));
 $('#btnToggleProj')&&$('#btnToggleProj').addEventListener('click',()=>$('#projFormWrap').classList.toggle('hide'));
 $('#btnCriarProjeto')&&$('#btnCriarProjeto').addEventListener('click',submitProjeto);
+$('#fichaClose')&&$('#fichaClose').addEventListener('click',()=>$('#projFichaOv').classList.remove('on'));
+$('#projFichaOv')&&$('#projFichaOv').addEventListener('click',e=>{if(e.target.id==='projFichaOv')$('#projFichaOv').classList.remove('on');});
 $('#demSearch')&&$('#demSearch').addEventListener('input',renderDemandasList);
 document.querySelectorAll('[data-go]').forEach(x=>x.addEventListener('click',()=>go(x.dataset.go)));
 function go(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
