@@ -43,6 +43,31 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .main{display:flex;flex-direction:column;min-width:0}
 .top{background:#fff;border-bottom:1px solid var(--linha);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
 .top .crumb{font-size:13px;color:var(--tsec)}.top .crumb b{color:#12213c}
+.menu-btn{display:none;background:none;border:1px solid var(--linha);border-radius:8px;width:38px;height:38px;font-size:18px;line-height:1;cursor:pointer;color:var(--azul-esc);align-items:center;justify-content:center;flex:none}
+.nav-backdrop{display:none;position:fixed;inset:0;background:rgba(20,10,30,.45);z-index:40}
+.nav-backdrop.on{display:block}
+.toasts{position:fixed;right:18px;bottom:18px;z-index:200;display:flex;flex-direction:column;gap:9px;max-width:340px}
+.toast{background:#26364f;color:#fff;font-size:13px;font-weight:500;padding:11px 15px 11px 14px;border-radius:10px;box-shadow:0 6px 22px rgba(15,40,80,.22);opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;border-left:4px solid #64748b}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{border-left-color:#1d9e75}
+.toast.err{border-left-color:#d64545}
+.toast.info{border-left-color:#2f74c0}
+@media(max-width:640px){.toasts{left:14px;right:14px;bottom:14px;max-width:none}}
+.ai-ov{position:fixed;inset:0;background:rgba(20,10,30,.55);z-index:140;display:none;overflow-y:auto;padding:28px 16px}
+.ai-ov.on{display:block}
+.ai-card{max-width:680px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.ai-head{display:flex;align-items:center;gap:10px;padding:15px 18px;background:linear-gradient(135deg,#5b2b86,#4e2270);color:#fff}
+.ai-head b{font-size:15px}
+.ai-head #aiSub{font-size:12.5px;color:#e6d8f4;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ai-head .xbtn{cursor:pointer;font-size:20px;color:#fff;line-height:1}
+.ai-tools{display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px 6px}
+.ai-chip{background:#f0e9f6;color:#4e2270;border:1px solid #e0d3ee;border-radius:20px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer}
+.ai-chip:hover{background:#e6d8f4}
+.ai-instr{display:block;margin:8px 18px 0;padding:9px 12px;border:1px solid var(--linha);border-radius:9px;font-size:13px;width:auto}
+.ai-out{margin:14px 18px;padding:14px;background:#faf9fc;border:1px solid var(--linha2);border-radius:10px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;min-height:80px;color:#26364f}
+.ai-hint{color:var(--mut);font-size:13px;white-space:normal}
+.ai-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 18px 16px}
+.ai-note{font-size:11.5px;color:var(--mut)}
 .who{display:flex;align-items:center;gap:10px}.who .av{width:34px;height:34px;border-radius:50%;background:var(--azul);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
 .who .nm{font-size:13px;font-weight:600;line-height:1.1}.who .rl{font-size:11px;color:var(--tsec)}
 .wrap{padding:22px 24px 50px}
@@ -218,7 +243,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .form-inline .full{grid-column:1/3}.form-inline input,.form-inline select,.form-inline textarea{width:100%;border:1px solid var(--linha);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
 .form-inline textarea{min-height:52px;resize:vertical}select{background:#fff}
 .loading{padding:36px;text-align:center;color:var(--tsec);font-size:13px}.empty{padding:24px 18px;text-align:center;color:var(--mut);font-size:13px}
-@media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.kpis{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}}
+@media(max-width:900px){.app{grid-template-columns:1fr}.menu-btn{display:inline-flex}.side{position:fixed;left:0;top:0;height:100vh;width:250px;z-index:50;transform:translateX(-100%);transition:transform .22s ease;box-shadow:2px 0 18px rgba(0,0,0,.22)}.side.open{transform:translateX(0)}.kpis{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}}
 .livro-cta{margin:-4px 0 18px}.livro-cta .btn{background:#4e2270}
 .livro-ov{position:fixed;inset:0;background:#525659;z-index:100;overflow:auto;display:none}
 .livro-ov.on{display:block}
@@ -318,9 +343,10 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
     </nav>
     <div class="side-foot"><button class="btn ghost sm block" id="btnLogout">Sair</button></div>
   </aside>
+  <div class="nav-backdrop" id="navBackdrop"></div>
   <div class="main">
     <div class="top">
-      <div class="crumb" id="crumb"><b>Painel</b></div>
+      <div style="display:flex;align-items:center;gap:11px;min-width:0"><button class="menu-btn" id="btnMenu" aria-label="Abrir menu">☰</button><div class="crumb" id="crumb"><b>Painel</b></div></div>
       <div class="who"><div class="av" id="uAv">--</div><div><div class="nm" id="uNm">—</div><div class="rl" id="uRl">—</div></div></div>
     </div>
     <div class="wrap">
@@ -454,7 +480,9 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 
 <div class="placarov" id="placarOv"><div class="placar-inner"><div class="placar-close" id="placarClose">×</div><div id="placarBody"><div class="loading" style="color:#fff">Carregando…</div></div></div></div>
 
-<div class="fichaov" id="projFichaOv"><div class="fichacard"><div class="fichahead"><div class="xbtn" id="fichaClose">×</div><h2 id="fichaTitulo"></h2><div class="cod" id="fichaCod"></div></div><div class="fichabody" id="fichaBody"></div></div></div>
+<div class="fichaov" id="projFichaOv"><div class="fichacard"><div class="fichahead"><div class="xbtn" id="fichaClose">×</div><h2 id="fichaTitulo"></h2><div class="cod" id="fichaCod"></div><button class="btn sm" id="btnAI" style="margin-left:auto">✨ MarIA</button></div><div class="fichabody" id="fichaBody"></div></div></div>
+
+<div class="ai-ov" id="aiOv"><div class="ai-card"><div class="ai-head"><b>✨ MarIA</b><span style="font-size:11px;color:#d9c8ea">assistente de gestão</span><span id="aiSub">Projeto</span><div class="xbtn" id="aiClose">×</div></div><div class="ai-tools"><button class="ai-chip" data-ai="descricao">Descrição / justificativa</button><button class="ai-chip" data-ai="objetivos">Objetivos</button><button class="ai-chip" data-ai="etp">Esboço de ETP</button><button class="ai-chip" data-ai="riscos">Matriz de riscos</button><button class="ai-chip" data-ai="indicadores">Indicadores</button><button class="ai-chip" data-ai="analise">Análise do andamento</button></div><input id="aiInstr" class="ai-instr" placeholder="Orientação adicional (opcional)…"><div class="ai-out" id="aiOut"><div class="ai-hint">Escolha uma opção acima — a MarIA usa os dados do projeto aberto.</div></div><div class="ai-foot"><span class="ai-note">Revise sempre — a MarIA pode errar.</span><button class="btn sm" id="aiCopy" style="display:none">Copiar texto</button></div></div></div>
 
 <div class="livro-ov" id="livroOverlay">
   <div class="livro-bar">
@@ -465,6 +493,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
   <div class="book" id="bookContent"></div>
 </div>
 
+<div id="toasts" class="toasts"></div>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL='https://phnthshtuyvchhwhihfh.supabase.co';
@@ -641,7 +670,7 @@ function renderMapa(){
     if(g){c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',c.dataset.id);c.classList.add('dragging');});c.addEventListener('dragend',()=>c.classList.remove('dragging'));}
   });
   if(g){
-    el.querySelectorAll('.dropz').forEach(z=>{z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('kover');});z.addEventListener('dragleave',()=>z.classList.remove('kover'));z.addEventListener('drop',async e=>{e.preventDefault();z.classList.remove('kover');const id=e.dataTransfer.getData('text/plain');const eid=z.dataset.drop||null;const p=PROJ.find(x=>x.id===id);if(!p||(p.eixo_id||'')===(eid||''))return;const {error}=await gov.from('projeto').update({eixo_id:eid||null}).eq('id',id);if(error)alert('Sem permissão para mover.');await loadProjetos();renderMapa();renderPainel();});});
+    el.querySelectorAll('.dropz').forEach(z=>{z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('kover');});z.addEventListener('dragleave',()=>z.classList.remove('kover'));z.addEventListener('drop',async e=>{e.preventDefault();z.classList.remove('kover');const id=e.dataTransfer.getData('text/plain');const eid=z.dataset.drop||null;const p=PROJ.find(x=>x.id===id);if(!p||(p.eixo_id||'')===(eid||''))return;const {error}=await gov.from('projeto').update({eixo_id:eid||null}).eq('id',id);if(error)toast('Sem permissão para mover.');await loadProjetos();renderMapa();renderPainel();});});
     const nb=$('#btnNovoEixo');if(nb)nb.addEventListener('click',novoEixo);
     el.querySelectorAll('[data-eixed]').forEach(b=>b.addEventListener('click',()=>editarEixo(b.dataset.eixed,b.dataset.nome,b.dataset.cor)));
     el.querySelectorAll('[data-eixdel]').forEach(b=>b.addEventListener('click',()=>excluirEixo(b.dataset.eixdel)));
@@ -655,14 +684,14 @@ async function novoEixo(){
   const cor=cores[(EIXOS||[]).length%cores.length];
   const ord=((EIXOS||[]).reduce((m,e)=>Math.max(m,e.ordem||0),0))+1;
   const {error}=await gov.from('eixo_governo').insert({nome:nome.trim(),cor,ordem:ord});
-  if(error){alert('Não foi possível criar: '+error.message);return;}
+  if(error){toast('Não foi possível criar: '+error.message);return;}
   await loadEixos();renderMapa();
 }
 async function editarEixo(id,nome,cor){
   const novo=prompt('Nome do eixo:',nome);if(novo===null)return;
   const nc=prompt('Cor do eixo (hex, ex.: #1d9e75):',cor);if(nc===null)return;
   const {error}=await gov.from('eixo_governo').update({nome:(novo.trim()||nome),cor:(nc.trim()||cor)}).eq('id',id);
-  if(error){alert('Não foi possível: '+error.message);return;}
+  if(error){toast('Não foi possível: '+error.message);return;}
   await loadEixos();await loadProjetos();renderMapa();renderPainel();
 }
 async function excluirEixo(id){
@@ -670,7 +699,7 @@ async function excluirEixo(id){
   if(!confirm('Excluir este eixo?'+(n?' Os '+n+' projeto(s) ficarão sem eixo.':'')))return;
   if(n)await gov.from('projeto').update({eixo_id:null}).eq('eixo_id',id);
   const {error}=await gov.from('eixo_governo').delete().eq('id',id);
-  if(error){alert('Não foi possível excluir: '+error.message);return;}
+  if(error){toast('Não foi possível excluir: '+error.message);return;}
   await loadEixos();await loadProjetos();renderMapa();renderPainel();
 }
 function novoProjetoNoEixo(eid){
@@ -707,7 +736,7 @@ function renderDemandasList(){
   el.querySelectorAll('select[data-id]').forEach(s=>s.addEventListener('change',onStatus));
 }
 function statusSel(d){const o=['nova','recebida','em_execucao','concluida','devolvida','cancelada'];return `<select data-id="${d.id}" class="btn ghost sm" style="padding:5px 8px">${o.map(x=>`<option value="${x}" ${x===d.status?'selected':''}>${stLabel[x]}</option>`).join('')}</select>`;}
-async function onStatus(e){const {error}=await gov.from('demanda').update({status:e.target.value}).eq('id',e.target.dataset.id);if(error){alert('Sem permissão para alterar esta demanda.');loadDemandas();}}
+async function onStatus(e){const {error}=await gov.from('demanda').update({status:e.target.value}).eq('id',e.target.dataset.id);if(error){toast('Sem permissão para alterar esta demanda.');loadDemandas();}}
 let apoioSel=[]; let SECS=[];
 async function prepForm(){const sel=$('#dSecretaria');
   const {data}=await gov.from('secretaria').select('id,sigla,nome').eq('tipo','secretaria').order('nome');
@@ -720,14 +749,14 @@ async function prepForm(){const sel=$('#dSecretaria');
 }
 function renderApoioChips(){const c=$('#dApoioChips');if(!c)return;c.innerHTML=apoioSel.map(s=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--azul-cl);color:var(--azul-esc);font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:20px">${esc(s.sigla||s.nome)}<span data-rm="${s.id}" style="cursor:pointer;font-weight:800">×</span></span>`).join('');c.querySelectorAll('[data-rm]').forEach(x=>x.addEventListener('click',()=>{apoioSel=apoioSel.filter(a=>a.id!==x.dataset.rm);renderApoioChips();}));}
 $('#btnCriarDemanda').addEventListener('click',async()=>{
-  const titulo=$('#dTitulo').value.trim();if(!titulo){alert('Informe um título.');return;}
-  const secretaria_id=isGlobal()?$('#dSecretaria').value:ME.secretaria_id;if(!secretaria_id){alert('Selecione a secretaria responsável.');return;}
+  const titulo=$('#dTitulo').value.trim();if(!titulo){toast('Informe um título.');return;}
+  const secretaria_id=isGlobal()?$('#dSecretaria').value:ME.secretaria_id;if(!secretaria_id){toast('Selecione a secretaria responsável.');return;}
   const direcao=isGlobal()?'governo_para_secretaria':'secretaria_para_prefeito';
   const {data,error}=await gov.from('demanda').insert({titulo,descricao:$('#dDesc').value.trim()||null,direcao,secretaria_id,prioridade:$('#dPrioridade').value||null}).select('id,codigo').single();
-  if(error){alert('Não foi possível registrar: '+error.message);return;}
+  if(error){toast('Não foi possível registrar: '+error.message);return;}
   const apoios=apoioSel.filter(s=>s.id!==secretaria_id);
-  if(apoios.length){const {error:e2}=await gov.from('demanda_apoio').insert(apoios.map(s=>({demanda_id:data.id,secretaria_id:s.id})));if(e2)alert('Demanda criada, mas erro ao vincular apoiadoras: '+e2.message);}
-  alert('Demanda '+(data.codigo||'')+' registrada.'+(apoios.length?' '+apoios.length+' secretaria(s) apoiadora(s) notificada(s).':''));
+  if(apoios.length){const {error:e2}=await gov.from('demanda_apoio').insert(apoios.map(s=>({demanda_id:data.id,secretaria_id:s.id})));if(e2)toast('Demanda criada, mas erro ao vincular apoiadoras: '+e2.message);}
+  toast('Demanda '+(data.codigo||'')+' registrada.'+(apoios.length?' '+apoios.length+' secretaria(s) apoiadora(s) notificada(s).':''));
   $('#dTitulo').value='';$('#dDesc').value='';$('#dPrioridade').value='';apoioSel=[];renderApoioChips();loadDemandas();});
 function renderProjetos(){
   renderProjetosKanban();
@@ -779,14 +808,14 @@ function wireKanbanDnD(){
   document.querySelectorAll('.kcol-b').forEach(col=>{
     col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('kover');});
     col.addEventListener('dragleave',()=>col.classList.remove('kover'));
-    col.addEventListener('drop',async e=>{e.preventDefault();col.classList.remove('kover');const id=e.dataTransfer.getData('text/plain');const st=col.dataset.col;const p=PAUTAS.find(x=>x.id===id);if(!p||p.status===st)return;const {error}=await gov.from('pauta').update({status:st}).eq('id',id);if(error){alert('Sem permissão para mover.');}loadPautas();});
+    col.addEventListener('drop',async e=>{e.preventDefault();col.classList.remove('kover');const id=e.dataTransfer.getData('text/plain');const st=col.dataset.col;const p=PAUTAS.find(x=>x.id===id);if(!p||p.status===st)return;const {error}=await gov.from('pauta').update({status:st}).eq('id',id);if(error){toast('Sem permissão para mover.');}loadPautas();});
   });
 }
-async function onPautaStatus(e){const {error}=await gov.from('pauta').update({status:e.target.value}).eq('id',e.target.dataset.pid);if(error){alert('Sem permissão.');}loadPautas();}
+async function onPautaStatus(e){const {error}=await gov.from('pauta').update({status:e.target.value}).eq('id',e.target.dataset.pid);if(error){toast('Sem permissão.');}loadPautas();}
 $('#btnCriarPauta').addEventListener('click',async()=>{
-  const titulo=$('#pTitulo').value.trim();if(!titulo){alert('Informe um título.');return;}
+  const titulo=$('#pTitulo').value.trim();if(!titulo){toast('Informe um título.');return;}
   const {error}=await gov.from('pauta').insert({titulo,descricao:$('#pDesc').value.trim()||null,urgencia:$('#pUrg').value,prazo:$('#pPrazo').value||null,categoria:$('#pCat').value.trim()||null});
-  if(error){alert('Não foi possível registrar: '+error.message);return;}
+  if(error){toast('Não foi possível registrar: '+error.message);return;}
   $('#pTitulo').value='';$('#pDesc').value='';$('#pPrazo').value='';$('#pCat').value='';loadPautas();});
 const STP={sem_projeto:{l:'Sem projeto',c:'#94a3b8',b:'#eef1f6',t:'#5f5e5a'},em_execucao:{l:'Em execução',c:'#d9932a',b:'#faeeda',t:'#854f0b'},entregue:{l:'Entregue',c:'#1d9e75',b:'#e1f5ee',t:'#0f6e56'}};
 let PROMS=[],METAS=[];
@@ -841,18 +870,18 @@ function renderPlano(){
   $('#planoWrap').innerHTML=h;
   document.querySelectorAll('.meta-in').forEach(el=>el.addEventListener('change',async e=>{
     const {error}=await gov.from('meta_plano').update({valor_atual:Number(e.target.value)}).eq('id',e.target.dataset.meta);
-    if(error)alert('Sem permissão para atualizar.');else loadPlano();
+    if(error)toast('Sem permissão para atualizar.');else loadPlano();
   }));
   document.querySelectorAll('.vinc-sel').forEach(el=>el.addEventListener('change',async e=>{
     const cod=e.target.value;if(!cod)return;const pj=PROJ.find(x=>x.codigo===cod);if(!pj)return;
     const {data:pjrow}=await gov.from('projeto').select('id').eq('codigo',cod).maybeSingle();
     const {error}=await gov.from('promessa_projeto').insert({promessa_id:e.target.dataset.prom,projeto_id:pjrow.id});
-    if(error)alert('Não foi possível vincular: '+error.message);else loadPlano();
+    if(error)toast('Não foi possível vincular: '+error.message);else loadPlano();
   }));
   document.querySelectorAll('[data-pauta]').forEach(el=>el.addEventListener('click',async e=>{
     const b=e.target;
     const {error}=await gov.from('pauta').insert({titulo:'Plano '+b.dataset.cod+': '+b.dataset.tit,descricao:'Promessa do Plano de Governo ('+b.dataset.pil+') ainda sem projeto vinculado. Priorizar transformação em projeto.',urgencia:'alta',categoria:'Plano de Governo',status:'aberta'});
-    if(error)alert('Não foi possível gerar a pauta: '+error.message);else{alert('Pauta criada no Radar do Prefeito.');loadPautas();}
+    if(error)toast('Não foi possível gerar a pauta: '+error.message);else{toast('Pauta criada no Radar do Prefeito.');loadPautas();}
   }));
 }
 function gaugeSVG(v,w){const tl=termLabel(v);const L=251.3,val=Math.max(0,v/100*L);return `<svg viewBox="0 0 200 118" width="${w||150}"><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="#eef1f6" stroke-width="16" stroke-linecap="round"/><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="${tl.c}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${val} 1000"/><text x="100" y="86" text-anchor="middle" font-size="40" font-weight="800" fill="${tl.c}">${v}</text><text x="100" y="108" text-anchor="middle" font-size="13" font-weight="700" fill="${tl.c}">${tl.l}</text></svg>`;}
@@ -974,11 +1003,11 @@ function renderPJchips(){
   p.querySelectorAll('[data-x]').forEach(x=>x.onclick=()=>{PJ.prom=PJ.prom.filter(v=>v.id!==x.dataset.x);renderPJchips();});
 }
 async function submitProjeto(){
-  const nome=$('#pjNome').value.trim();if(!nome){alert('Informe o nome do projeto.');return;}
-  const secretaria_id=isGlobal()?$('#pjSecretaria').value:ME.secretaria_id;if(!secretaria_id){alert('Selecione a secretaria responsável.');return;}
+  const nome=$('#pjNome').value.trim();if(!nome){toast('Informe o nome do projeto.');return;}
+  const secretaria_id=isGlobal()?$('#pjSecretaria').value:ME.secretaria_id;if(!secretaria_id){toast('Selecione a secretaria responsável.');return;}
   const rec={nome,descricao:$('#pjDesc').value.trim()||null,secretaria_id,natureza:$('#pjNatureza').value||null,eixo_id:$('#pjEixo').value||null,prioridade:$('#pjPrioridade').value||null,lider_id:$('#pjLider').value||null,fase:$('#pjFase').value||'planejamento',status:'nao_iniciado',data_inicio:$('#pjInicio').value||null,data_fim_prevista:$('#pjFim').value||null};
   const {data,error}=await gov.from('projeto').insert(rec).select('id,codigo').single();
-  if(error){alert('Não foi possível cadastrar: '+error.message);return;}
+  if(error){toast('Não foi possível cadastrar: '+error.message);return;}
   const pid=data.id;const T=[];
   const orc=parseFloat($('#pjOrc').value);if(orc>0)T.push(gov.from('execucao_orcamentaria').insert({projeto_id:pid,exercicio:2026,valor_orcado:orc}));
   if(PJ.equipe.length)T.push(gov.from('projeto_equipe').insert(PJ.equipe.map(s=>({projeto_id:pid,servidor_id:s.id,papel:'tecnico'}))));
@@ -987,7 +1016,7 @@ async function submitProjeto(){
   const emp=$('#pjEmpresa').value.trim(),mod=$('#pjModalidade').value,proc=$('#pjProcesso').value.trim();
   if(emp||mod||proc){const vc=parseFloat($('#pjValorC').value);T.push(gov.from('contrato').insert({projeto_id:pid,numero_processo:proc||null,numero_contrato:$('#pjContrato').value.trim()||null,modalidade:mod||null,empresa_nome:emp||null,empresa_cnpj:$('#pjCnpj').value.trim()||null,valor_contratado:vc>0?vc:null,vigencia_inicio:$('#pjVigIni').value||null,vigencia_fim:$('#pjVigFim').value||null,fiscal_id:$('#pjFiscal').value||null,gestor_id:$('#pjGestor').value||null}));}
   const res=await Promise.all(T);const bad=res.find(r=>r&&r.error);
-  alert('Projeto '+(data.codigo||'')+' cadastrado.'+(bad?' (atenção: alguns vínculos não foram salvos)':''));
+  toast('Projeto '+(data.codigo||'')+' cadastrado.'+(bad?' (atenção: alguns vínculos não foram salvos)':''));
   ['pjNome','pjDesc','pjOrc','pjInicio','pjFim','pjProcesso','pjEmpresa','pjCnpj','pjContrato','pjValorC','pjVigIni','pjVigFim'].forEach(i=>$('#'+i).value='');
   ['pjNatureza','pjEixo','pjPrioridade','pjModalidade','pjFiscal','pjGestor'].forEach(i=>$('#'+i).value='');$('#pjFase').value='planejamento';
   PJ.equipe=[];PJ.apoio=[];PJ.prom=[];renderPJchips();
@@ -1010,19 +1039,20 @@ function renderProjetosKanban(){
   document.querySelectorAll('#projKanban .kcol-b').forEach(col=>{
     col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('kover');});
     col.addEventListener('dragleave',()=>col.classList.remove('kover'));
-    col.addEventListener('drop',async e=>{e.preventDefault();col.classList.remove('kover');const id=e.dataTransfer.getData('text/plain');const fase=col.dataset.fase;const p=PROJ.find(x=>x.id===id);if(!p||(p.fase||'planejamento')===fase)return;const upd={fase};if(fase==='concluido')upd.status='concluido';const {error}=await gov.from('projeto').update(upd).eq('id',id);if(error){alert('Sem permissão para mover este projeto.');}await loadProjetos();renderProjetos();});
+    col.addEventListener('drop',async e=>{e.preventDefault();col.classList.remove('kover');const id=e.dataTransfer.getData('text/plain');const fase=col.dataset.fase;const p=PROJ.find(x=>x.id===id);if(!p||(p.fase||'planejamento')===fase)return;const upd={fase};if(fase==='concluido')upd.status='concluido';const {error}=await gov.from('projeto').update(upd).eq('id',id);if(error){toast('Sem permissão para mover este projeto.');}await loadProjetos();renderProjetos();});
   });
 }
 const MODL={pregao_eletronico:'Pregão eletrônico',pregao_presencial:'Pregão presencial',concorrencia:'Concorrência',concurso:'Concurso',leilao:'Leilão',dialogo_competitivo:'Diálogo competitivo',dispensa:'Dispensa',inexigibilidade:'Inexigibilidade',adesao_ata:'Adesão a ata (SRP)',nao_se_aplica:'Não se aplica'};
 const NATL={obra:'Obra',servico:'Serviço',compra:'Compra / Aquisição',programa:'Programa',outro:'Outro'};
 let FICHA_PID=null,FICHA_EXECID=null;
+let AI_CTX=null;
 async function openFichaProjeto(id){
   const {data:p,error}=await gov.from('projeto').select('codigo,nome,descricao,status,fase,prioridade,natureza,progresso_fisico,progresso_financeiro,data_inicio,data_fim_prevista,beneficiarios,secretaria_id,secretaria:secretaria_id(sigla,nome),lider:lider_id(nome,cargo),eixo:eixo_id(nome,cor),execucao_orcamentaria(id,valor_orcado,empenhado,liquidado,pago),projeto_equipe(papel,servidor:servidor_id(nome,cargo)),projeto_apoio(secretaria:secretaria_id(sigla,nome)),promessa_projeto(promessa:promessa_id(codigo,titulo)),contrato(numero_processo,numero_contrato,modalidade,empresa_nome,empresa_cnpj,valor_contratado,vigencia_inicio,vigencia_fim,fiscal:fiscal_id(nome),gestor:gestor_id(nome)),anexo(id,nome,tipo,path,tamanho)').eq('id',id).maybeSingle();
-  if(error||!p){alert('Não foi possível abrir a ficha do projeto.');return;}
+  if(error||!p){toast('Não foi possível abrir a ficha do projeto.');return;}
   const sum=k=>(p.execucao_orcamentaria||[]).reduce((a,b)=>a+Number(b[k]||0),0);
   const orc=sum('valor_orcado'),emp=sum('empenhado'),liq=sum('liquidado'),pag=sum('pago');
   const c=(p.contrato||[])[0];
-  FICHA_PID=id;FICHA_EXECID=(p.execucao_orcamentaria&&p.execucao_orcamentaria[0])?p.execucao_orcamentaria[0].id:null;
+  FICHA_PID=id;AI_CTX={'Nome do projeto':p.nome,'Secretaria responsável':p.secretaria?.nome,'Eixo de governo':p.eixo?.nome,'Natureza':p.natureza,'Situação':p.status,'Fase (Lei 14.133/2021)':p.fase,'Prioridade':p.prioridade,'Progresso físico (%)':p.progresso_fisico,'Beneficiários':p.beneficiarios,'Descrição atual':p.descricao,'Orçado (R$)':orc,'Empenhado (R$)':emp,'Início':p.data_inicio,'Fim previsto':p.data_fim_prevista};FICHA_EXECID=(p.execucao_orcamentaria&&p.execucao_orcamentaria[0])?p.execucao_orcamentaria[0].id:null;
   const canEdit=isGlobal()||(ME.secretaria_id&&ME.secretaria_id===p.secretaria_id);
   const it=(l,v)=>`<div class="fitem"><div class="l">${l}</div><div class="v">${v||'—'}</div></div>`;
   let html=`<div class="fsec"><div class="fgrid">${it('Secretaria responsável',esc(p.secretaria?.nome||''))}${it('Líder do projeto',esc(p.lider?.nome||'—'))}${it('Eixo de governo',esc(p.eixo?.nome||'—'))}${it('Natureza',NATL[p.natureza]||'—')}${it('Prioridade',p.prioridade||'—')}${it('Fase',FASEL[p.fase]||p.fase)}${it('Status',SL[p.status]||p.status)}${it('Beneficiários',p.beneficiarios?p.beneficiarios.toLocaleString('pt-BR'):'—')}</div>${p.descricao?`<p style="margin-top:12px;font-size:13px;color:#3a4a63;line-height:1.5">${esc(p.descricao)}</p>`:''}</div>`;
@@ -1052,7 +1082,7 @@ async function saveFichaUpdate(){
   const pfin=Math.max(0,Math.min(100,parseInt($('#fkPfin').value)||0));
   const st=$('#fkStatus').value,fase=$('#fkFase').value;
   const {error}=await gov.from('projeto').update({progresso_fisico:pf,progresso_financeiro:pfin,status:st,fase:fase}).eq('id',FICHA_PID);
-  if(error){alert('Sem permissão para atualizar este projeto.');return;}
+  if(error){toast('Sem permissão para atualizar este projeto.');return;}
   const emp=parseFloat($('#fkEmp').value)||0,liq=parseFloat($('#fkLiq').value)||0,pag=parseFloat($('#fkPag').value)||0;
   if(FICHA_EXECID){await gov.from('execucao_orcamentaria').update({empenhado:emp,liquidado:liq,pago:pag}).eq('id',FICHA_EXECID);}
   else if(emp||liq||pag){await gov.from('execucao_orcamentaria').insert({projeto_id:FICHA_PID,exercicio:2026,valor_orcado:0,empenhado:emp,liquidado:liq,pago:pag});}
@@ -1092,10 +1122,10 @@ function renderAlertas(){
 }
 async function gerarPautaAlerta(a){
   if(!a)return;
-  if((PAUTAS||[]).find(p=>p.titulo===a.titulo)){alert('Já existe uma pauta para este alerta.');return;}
+  if((PAUTAS||[]).find(p=>p.titulo===a.titulo)){toast('Já existe uma pauta para este alerta.');return;}
   const {error}=await gov.from('pauta').insert({titulo:a.titulo,descricao:a.sub,urgencia:a.urg,categoria:'Alerta de prazo',status:'aberta'});
-  if(error){alert('Não foi possível gerar a pauta: '+error.message);return;}
-  alert('Pauta criada no Radar do Prefeito.');loadPautas();
+  if(error){toast('Não foi possível gerar a pauta: '+error.message);return;}
+  toast('Pauta criada no Radar do Prefeito.');loadPautas();
 }
 function sparkline(vals,w,hh,color){
   if(!vals||vals.length<2)return '';
@@ -1117,10 +1147,10 @@ async function registrarSnapshot(silent){
   const t=computeTermometro(),d=t.dims;
   const rec={data:new Date().toISOString().slice(0,10),indice:t.overall,exec:d[0].s,plano:d[1].s,orc:d[2].s,risco:d[3].s,dem:d[4].s};
   const {error}=await gov.from('termometro_snapshot').upsert(rec,{onConflict:'data'});
-  if(error&&!silent)alert('Não foi possível registrar: '+error.message);
+  if(error&&!silent)toast('Não foi possível registrar: '+error.message);
   const r=await gov.from('termometro_snapshot').select('data,indice').order('data');
   SNAPS=r.data||[];renderTermometro();
-  if(!silent)alert('Leitura de hoje registrada.');
+  if(!silent)toast('Leitura de hoje registrada.');
 }
 let AUDIT=[];
 const TBLL={projeto:'Projeto',demanda:'Demanda',pauta:'Pauta',contrato:'Contrato'};
@@ -1147,11 +1177,11 @@ function renderAuditoria(){
     return `<div class="row"><div class="r-main"><div class="r-t"><b style="color:#4e2270">${esc(a.ator_nome||'sistema')}</b> ${acaoL[a.acao]||a.acao} · ${TBLL[a.tabela]||a.tabela}</div><div class="r-s">${esc(resumoMud(a))}</div></div><span class="pill">${q}</span></div>`;}).join('');
 }
 async function converterPautaDemanda(p){
-  if(!p||!p.secretaria_id){alert('Vincule a pauta a uma secretaria antes de transformá-la em demanda.');return;}
+  if(!p||!p.secretaria_id){toast('Vincule a pauta a uma secretaria antes de transformá-la em demanda.');return;}
   const prio=p.urgencia==='critica'?'P1':p.urgencia==='alta'?'P2':'P3';
   const {data,error}=await gov.from('demanda').insert({titulo:p.titulo,descricao:p.descricao||null,direcao:'governo_para_secretaria',secretaria_id:p.secretaria_id,prioridade:prio}).select('codigo').single();
-  if(error){alert('Não foi possível criar a demanda: '+error.message);return;}
-  alert('Demanda '+(data.codigo||'')+' criada para a secretaria '+(p.secretaria?.sigla||'')+'. Acompanhe em "Demandas para as Secretarias".');
+  if(error){toast('Não foi possível criar a demanda: '+error.message);return;}
+  toast('Demanda '+(data.codigo||'')+' criada para a secretaria '+(p.secretaria?.sigla||'')+'. Acompanhe em "Demandas para as Secretarias".');
   loadDemandas();
 }
 async function loadNotif(){
@@ -1200,15 +1230,15 @@ async function openPlacarPublico(){
     ${metas.map(m=>{const pct=m.pct||0;return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span>${esc(m.indicador)}</span><span style="font-weight:700">${pct}%</span></div><div style="height:9px;background:rgba(255,255,255,.18);border-radius:5px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#72bf44;border-radius:5px"></div></div><div style="font-size:11px;color:#d9c8ea;margin-top:3px">atual ${m.atual} · meta ${m.alvo} ${esc(m.unidade||'')} até ${m.prazo}</div></div>`}).join('')}
     <div style="text-align:center;margin-top:26px;color:#d9c8ea;font-size:11.5px">Prefeitura Municipal de Santa Maria · dados atualizados automaticamente</div>`;
 }
-async function baixarAnexo(path){const {data,error}=await gov.storage.from('documentos').createSignedUrl(path,3600);if(error){alert('Não foi possível gerar o link do arquivo.');return;}window.open(data.signedUrl,'_blank');}
+async function baixarAnexo(path){const {data,error}=await gov.storage.from('documentos').createSignedUrl(path,3600);if(error){toast('Não foi possível gerar o link do arquivo.');return;}window.open(data.signedUrl,'_blank');}
 async function uploadAnexo(pid){
-  const fi=$('#anxFile');const file=fi&&fi.files&&fi.files[0];if(!file){alert('Escolha um arquivo.');return;}
-  if(file.size>15*1024*1024){alert('Arquivo muito grande (máx. 15 MB).');return;}
+  const fi=$('#anxFile');const file=fi&&fi.files&&fi.files[0];if(!file){toast('Escolha um arquivo.');return;}
+  if(file.size>15*1024*1024){toast('Arquivo muito grande (máx. 15 MB).');return;}
   const tipo=$('#anxTipo').value;const path=pid+'/'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
   const up=await gov.storage.from('documentos').upload(path,file);
-  if(up.error){alert('Falha no upload: '+up.error.message);return;}
+  if(up.error){toast('Falha no upload: '+up.error.message);return;}
   const {error}=await gov.from('anexo').insert({projeto_id:pid,nome:file.name,tipo,path,tamanho:file.size});
-  if(error)alert('Documento enviado, mas houve erro ao registrar: '+error.message);
+  if(error)toast('Documento enviado, mas houve erro ao registrar: '+error.message);
   openFichaProjeto(pid);
 }
 async function excluirAnexo(id,path){if(!confirm('Excluir este documento?'))return;await gov.storage.from('documentos').remove([path]);await gov.from('anexo').delete().eq('id',id);openFichaProjeto(FICHA_PID);}
@@ -1319,7 +1349,7 @@ async function gerarLivro(){
 $('#btnGerarLivro')&&$('#btnGerarLivro').addEventListener('click',gerarLivro);
 $('#btnFecharLivro').addEventListener('click',()=>$('#livroOverlay').classList.remove('on'));
 $('#btnImprimir').addEventListener('click',()=>window.print());
-document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));document.querySelectorAll('[data-ai]').forEach(b=>b.addEventListener('click',()=>runAI(b.dataset.ai)));$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(window._aiTxt||'').then(()=>toast('Texto copiado.','ok'));});
 $('#btnToggleProj')&&$('#btnToggleProj').addEventListener('click',()=>$('#projFormWrap').classList.toggle('hide'));
 $('#btnCriarProjeto')&&$('#btnCriarProjeto').addEventListener('click',submitProjeto);
 $('#fichaClose')&&$('#fichaClose').addEventListener('click',()=>$('#projFichaOv').classList.remove('on'));
@@ -1329,7 +1359,10 @@ $('#audFiltro')&&$('#audFiltro').addEventListener('change',renderAuditoria);
 $('#btnLivroRel')&&$('#btnLivroRel').addEventListener('click',gerarLivro);
 $('#btnApresentacao')&&$('#btnApresentacao').addEventListener('click',gerarApresentacao);
 document.querySelectorAll('[data-go]').forEach(x=>x.addEventListener('click',()=>go(x.dataset.go)));
-function go(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
+function openAI(){if(!AI_CTX){toast('Abra um projeto primeiro.');return;}$('#aiSub').textContent=AI_CTX['Nome do projeto']||'Projeto';$('#aiOut').innerHTML='<div class="ai-hint">Escolha uma opção acima — a MarIA usa os dados do projeto aberto.</div>';$('#aiCopy').style.display='none';$('#aiInstr').value='';$('#aiOv').classList.add('on');}
+async function runAI(tarefa){const out=$('#aiOut');out.innerHTML='<div class="ai-hint">MarIA está redigindo…</div>';$('#aiCopy').style.display='none';try{const {data,error}=await gov.functions.invoke('ai_assist',{body:{tarefa,projeto:AI_CTX,instrucao:$('#aiInstr').value.trim()}});if(error){out.innerHTML='<div class="ai-hint">Falha ao chamar a MarIA. Confirme se a chave da Anthropic foi configurada na função.</div>';return;}if(data&&data.error){out.innerHTML='<div class="ai-hint">'+esc(data.error)+'</div>';return;}window._aiTxt=(data&&data.texto)||'';out.textContent=window._aiTxt||'(sem resposta)';if(window._aiTxt)$('#aiCopy').style.display='';}catch(e){out.innerHTML='<div class="ai-hint">Erro: '+esc(String(e))+'</div>';}}
+function toast(msg,type){const c=document.getElementById('toasts');const s=String(msg);if(!type){if(/sem permiss|n[ãa]o foi|falha|erro|inv[áa]lid|muito grande|informe |selecione |escolha |vincule /i.test(s))type='err';else if(/criad|enviad|registrad|gerad|atualizad|salvo|conclu/i.test(s))type='ok';else type='info';}if(!c){return;}const t=document.createElement('div');t.className='toast '+type;t.textContent=s;c.appendChild(t);requestAnimationFrame(()=>t.classList.add('show'));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},4000);}
+function go(v){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
   document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   $('#crumb').innerHTML='<b>'+((document.querySelector('#nav a[data-v="'+v+'"]')?.textContent||v).trim().replace(/\s*\d+$/,''))+'</b>';if(v==='demandas'||v==='pautas')marcarVisto(v);window.scrollTo(0,0);}
 document.querySelectorAll("img[data-logo]").forEach(i=>i.src=LOGO);
