@@ -635,7 +635,20 @@ async function gerarLivro(){
   const kb=(v,l)=>`<div class="kbox"><div class="v">${v}</div><div class="l">${l}</div></div>`;
   const _t=computeTermometro(),_tl=termLabel(_t.overall);
   const pages=[];
-  pages.push(`<div class="page cover"><div class="cover-top"><div style="background:#fff;border-radius:12px;padding:16px 24px;margin-bottom:26px"><img src="logo.png" alt="Prefeitura de Santa Maria" style="height:66px;display:block;margin:0"></div><div class="kick">Livro do Governo</div><h1>Gestão Municipal 2025–2028</h1><h2>Prefeitura Municipal de Santa Maria</h2></div><div class="cover-bar"></div><div class="cover-foot"><b>Relatório consolidado da gestão</b><br>Pautas, projetos, orçamento e impactos sociais · Gerado em ${hoje}</div></div>`);
+  pages.push(`<div class="page cover" style="padding:0;display:block;background:#f6f3fb;min-height:295mm;position:relative">
+    <div style="padding:26mm 22mm 0">
+      <img src="logo.png" alt="Prefeitura de Santa Maria" style="height:50px;display:block;margin-bottom:32mm">
+      <div style="font-size:12px;letter-spacing:4px;color:#4e2270;font-weight:700;margin-bottom:12px">LIVRO DO GOVERNO</div>
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:46px;font-weight:700;color:#662d91;line-height:1.05">Gestão<br>2025–2028</div>
+      <div style="width:70mm;height:5px;background:#72bf44;margin:18px 0 15px"></div>
+      <div style="font-size:14px;color:#5b6472;max-width:120mm">Relatório consolidado da gestão — pautas, projetos, orçamento e impactos sociais.</div>
+      <div style="font-size:11px;color:#8a93a3;margin-top:9px">Gerado em ${hoje}</div>
+    </div>
+    <div style="position:absolute;bottom:0;left:0;right:0;background:#662d91;color:#fff;padding:11mm 22mm">
+      <div style="font-size:13px;font-weight:700;letter-spacing:1px">PREFEITURA MUNICIPAL DE SANTA MARIA</div>
+      <div style="font-size:11px;color:#e3d4f2;margin-top:3px">Todos por Santa Maria! · 2025–2028</div>
+    </div>
+  </div>`);
   pages.push(`<div class="page"><h3 class="sec">1. Objetivo</h3><p>A Plataforma de Governança da Prefeitura Municipal de Santa Maria tem como objetivo dar transparência, previsibilidade e ritmo à execução das prioridades de governo. Este Livro do Governo consolida, em um único documento e de forma automática, o retrato atualizado da gestão — as pautas priorizadas pelo Gabinete, os projetos conduzidos por cada Secretaria, os recursos orçamentários vinculados e os impactos esperados para a população de Santa Maria.</p>
   <h3 class="sec" style="margin-top:24px">2. Justificativa</h3><p>A boa gestão pública exige planejamento, acompanhamento contínuo e prestação de contas. Ao integrar o Plano Plurianual (PPA 2026–2029), a Lei Orçamentária Anual (LOA 2026) e a execução dos projetos prioritários, este documento permite ao Prefeito e à sociedade acompanhar o que foi planejado, o que está em execução e o que já foi entregue.</p><p>Mais do que um relatório, é um instrumento de decisão: evidencia avanços, sinaliza riscos e orienta correções de rota com base em dados sempre atualizados. Cada geração deste Livro reflete o estado real da gestão no momento da emissão.</p>${foot(2)}</div>`);
   pages.push(`<div class="page"><h3 class="sec">3. Indicadores da Gestão</h3>
