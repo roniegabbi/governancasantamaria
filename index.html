@@ -260,6 +260,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       <a data-v="projetos">Projetos</a>
       <a data-v="secretarias" id="navSec">Secretarias</a>
       <a data-v="relatorios" id="navRel">Relatórios</a>
+      <a data-v="auditoria" id="navAud">Auditoria</a>
     </nav>
     <div class="side-foot"><button class="btn ghost sm block" id="btnLogout">Sair</button></div>
   </aside>
@@ -387,6 +388,11 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
         <div class="panel"><div class="p-head"><h3>Ficha do Governo</h3></div><div class="p-body"><div class="rel-row"><div class="rr-m"><div class="r-t">Ficha Executiva — Governo Geral</div><div class="r-s">Visão consolidada: termômetro, indicadores, plano e alertas</div></div><button class="btn sm" id="btnFichaGov">Gerar PDF</button></div></div></div>
         <div class="panel"><div class="p-head"><h3>Ficha por Secretaria</h3><span class="pill">para o feedback do Prefeito</span></div><div class="p-body" id="fichaSecList"><div class="loading">Carregando…</div></div></div>
       </section>
+
+      <section class="view" id="v-auditoria">
+        <div class="ph"><h2>Auditoria</h2><p>Registro de quem alterou o quê e quando — projetos, demandas, pautas e contratos.</p></div>
+        <div class="panel"><div class="p-head"><h3>Histórico de alterações</h3><select id="audFiltro" style="border:1px solid var(--linha);border-radius:8px;padding:6px 10px;font-size:12.5px;font-family:inherit"><option value="">Todas as tabelas</option><option value="projeto">Projetos</option><option value="demanda">Demandas</option><option value="pauta">Pautas</option><option value="contrato">Contratos</option></select></div><div class="p-body" id="audList"><div class="loading">Carregando…</div></div></div>
+      </section>
     </div>
   </div>
 </div>
@@ -486,7 +492,7 @@ async function loadMe(){
   renderId();showApp();
   await loadProjetos();
   renderPainel();renderMapa();renderGantt();
-  loadPautas();loadPlano();loadDemandas();renderProjetos();loadSecretarias();loadRelatorios();prepForm();prepProjForm();loadAlertas();setTimeout(()=>loadTermHistorico(),1800);
+  loadPautas();loadPlano();loadDemandas();renderProjetos();loadSecretarias();loadRelatorios();prepForm();prepProjForm();loadAlertas();loadAuditoria();setTimeout(()=>loadTermHistorico(),1800);
 }
 function renderId(){
   const ini=ME.nome.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -496,6 +502,7 @@ function renderId(){
   else{$('#scope').innerHTML='Ambiente da <b>'+(ME.secretaria?.nome||'sua secretaria')+'</b> — você vê apenas a sua pasta.';$('#painelTit').textContent='Meu Painel';$('#navSec').classList.add('hide');}
   $('#livroCta').style.display=isGlobal()?'':'none';
   $('#navRel').style.display=isGlobal()?'':'none';
+  $('#navAud').style.display=isGlobal()?'':'none';
 }
 async function loadProjetos(){
   const {data}=await gov.from('projeto').select('id,codigo,nome,status,fase,prioridade,progresso_fisico,data_inicio,data_fim_prevista,secretaria:secretaria_id(sigla,nome),eixo:eixo_id(nome,cor),exec:execucao_orcamentaria(valor_orcado,empenhado)').order('prioridade');
@@ -971,6 +978,30 @@ async function registrarSnapshot(silent){
   SNAPS=r.data||[];renderTermometro();
   if(!silent)alert('Leitura de hoje registrada.');
 }
+let AUDIT=[];
+const TBLL={projeto:'Projeto',demanda:'Demanda',pauta:'Pauta',contrato:'Contrato'};
+async function loadAuditoria(){
+  if(!isGlobal())return;
+  const {data}=await gov.from('auditoria').select('criado_at,ator_nome,tabela,acao,mudancas').order('criado_at',{ascending:false}).limit(200);
+  AUDIT=data||[];renderAuditoria();
+}
+function resumoMud(a){
+  if(a.acao==='INSERT')return 'registro criado';
+  if(a.acao==='DELETE')return 'registro excluído';
+  const m=a.mudancas||{};const parts=[];
+  for(const k in m){ if(k==='registro')continue; let de=m[k]&&m[k].de,para=m[k]&&m[k].para;
+    if(k==='status'){de=SL[de]||de;para=SL[para]||para;} if(k==='fase'){de=FASEL[de]||de;para=FASEL[para]||para;}
+    parts.push(esc(k)+': '+(de==null?'—':esc(String(de)))+' → '+(para==null?'—':esc(String(para)))); }
+  return parts.slice(0,4).join(' · ')||'atualização';
+}
+function renderAuditoria(){
+  const el=$('#audList');if(!el)return;const fil=(($('#audFiltro')||{}).value)||'';
+  let list=AUDIT;if(fil)list=AUDIT.filter(a=>a.tabela===fil);
+  if(!list.length){el.innerHTML='<div class="empty">Nenhum registro de alteração ainda.</div>';return;}
+  const acaoL={INSERT:'criou',UPDATE:'alterou',DELETE:'excluiu'};
+  el.innerHTML=list.map(a=>{const dt=new Date(a.criado_at);const q=dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="row"><div class="r-main"><div class="r-t"><b style="color:#4e2270">${esc(a.ator_nome||'sistema')}</b> ${acaoL[a.acao]||a.acao} · ${TBLL[a.tabela]||a.tabela}</div><div class="r-s">${esc(resumoMud(a))}</div></div><span class="pill">${q}</span></div>`;}).join('');
+}
 async function gerarLivro(){
   const btn=$('#btnGerarLivro');const old=btn.textContent;btn.textContent='Gerando…';btn.disabled=true;
   const [prog,org,prm,mtp]=await Promise.all([gov.from('programa_ppa').select('valor_previsto'),gov.from('orcamento_orgao').select('valor_fixado'),gov.from('promessa').select('pilar,promessa_projeto(projeto:projeto_id(status))'),gov.from('meta_plano').select('indicador,unidade,valor_alvo,valor_atual,prazo_ano')]);
@@ -1043,6 +1074,7 @@ $('#btnCriarProjeto')&&$('#btnCriarProjeto').addEventListener('click',submitProj
 $('#fichaClose')&&$('#fichaClose').addEventListener('click',()=>$('#projFichaOv').classList.remove('on'));
 $('#projFichaOv')&&$('#projFichaOv').addEventListener('click',e=>{if(e.target.id==='projFichaOv')$('#projFichaOv').classList.remove('on');});
 $('#demSearch')&&$('#demSearch').addEventListener('input',renderDemandasList);
+$('#audFiltro')&&$('#audFiltro').addEventListener('change',renderAuditoria);
 document.querySelectorAll('[data-go]').forEach(x=>x.addEventListener('click',()=>go(x.dataset.go)));
 function go(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
   document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
