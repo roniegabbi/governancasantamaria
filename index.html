@@ -80,6 +80,13 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .ai-instr{display:block;margin:8px 18px 0;padding:9px 12px;border:1px solid var(--linha);border-radius:9px;font-size:13px;width:auto}
 .ai-out{margin:14px 18px;padding:14px;background:#faf9fc;border:1px solid var(--linha2);border-radius:10px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;min-height:80px;color:#26364f}
 .ai-hint{color:var(--mut);font-size:13px;white-space:normal}
+.ai-out{white-space:normal}
+.ai-out h3{font-size:13px;font-weight:800;color:#4e2270;margin:13px 0 5px}
+.ai-out h3:first-child{margin-top:0}
+.ai-out h2{font-size:14px;font-weight:800;color:#4e2270;margin:13px 0 6px}
+.ai-out p{margin:7px 0}
+.ai-out ul,.ai-out ol{margin:7px 0 7px 20px}
+.ai-out li{margin:3px 0}
 .ai-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 18px 16px}
 .ai-note{font-size:11.5px;color:var(--mut)}
 .who{display:flex;align-items:center;gap:10px}.who .av{width:34px;height:34px;border-radius:50%;background:var(--azul);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
@@ -429,7 +436,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
             <textarea class="full" id="dDesc" placeholder="Descrição (opcional)"></textarea>
             <select id="dSecretaria"></select>
             <select id="dPrioridade"><option value="">Prioridade</option><option>P1</option><option>P2</option><option>P3</option></select>
-            <div class="full" id="dApoioWrap"><div style="font-size:12px;color:var(--tsec);margin-bottom:6px;font-weight:600">Secretarias apoiadoras (que precisam se envolver na execução)</div><select id="dApoioSel"></select><div id="dApoioChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div></div>
+            <div class="full" id="dApoioWrap"><div style="font-size:12px;color:var(--tsec);margin-bottom:6px;font-weight:600">Secretarias apoiadoras — adicione quantas precisar (todas verão a demanda no ambiente delas)</div><select id="dApoioSel"></select><div id="dApoioChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div></div>
             <button class="btn full" id="btnCriarDemanda">Registrar demanda</button>
           </div>
         </div>
@@ -753,6 +760,7 @@ function renderGantt(){
   $('#gantt').innerHTML=g||'<div class="empty">Sem projetos com datas.</div>';
 }
 let PENDING_DEM=null,DEST_DEM=null,SECS_TERM=[],AI_MODE='projeto';
+function apoioBadge(d){if(isGlobal()||!ME.secretaria)return '';const resp=d.secretaria?.sigla===ME.secretaria.sigla;const apoio=(d.demanda_apoio||[]).some(a=>a.secretaria?.sigla===ME.secretaria.sigla);return (!resp&&apoio)?'<span class="tag" style="background:#e6f1fb;color:#185fa5">Apoio</span>':'';}
 function destinoChip(d){
   if(d.projeto_id)return `<span class="tag" style="background:#e6f1fb;color:#185fa5">→ ${esc(d.projeto?.codigo||'Projeto')}</span>`;
   if(d.acao_id)return `<span class="tag" style="background:#eaf3de;color:#3b6d11">→ ${d.acao?.projeto?.codigo?('Ação em '+esc(d.acao.projeto.codigo)):'Ação'}</span>`;
@@ -806,7 +814,7 @@ function renderDemandasList(){
   if(!list.length){el.innerHTML='<div class="empty">Nenhuma demanda encontrada.</div>';return;}
   el.innerHTML=list.map(d=>{
     const apoio=(d.demanda_apoio||[]).map(a=>a.secretaria&&a.secretaria.sigla).filter(Boolean);
-    return `<div class="row"><div class="r-main"><div class="r-t"><span style="font-family:monospace;font-size:11px;color:#4e2270;background:#f0e9f6;padding:1px 6px;border-radius:5px;margin-right:8px">${d.codigo||'—'}</span>${esc(d.titulo)}</div><div class="r-s">${d.direcao==='governo_para_secretaria'?'Governo → '+(d.secretaria?.sigla||'Secretaria'):'Secretaria → Prefeito'}${d.prioridade?' · '+d.prioridade:''}${apoio.length?' · apoio: '+esc(apoio.join(', ')):''}${d.descricao?' · '+esc(d.descricao).slice(0,60):''}</div></div><span class="tag" style="background:#eef1f6;color:#3a4a63">${stLabel[d.status]}</span>${destinoChip(d)}${(!isGlobal()&&d.direcao==='governo_para_secretaria'&&!d.projeto_id&&!d.acao_id&&d.status!=='concluida'&&d.status!=='cancelada')?`<button class="btn sm" data-dest="${d.id}" style="padding:5px 9px">→ Dar destino</button>`:''}${statusSel(d)}</div>`;
+    return `<div class="row"><div class="r-main"><div class="r-t"><span style="font-family:monospace;font-size:11px;color:#4e2270;background:#f0e9f6;padding:1px 6px;border-radius:5px;margin-right:8px">${d.codigo||'—'}</span>${esc(d.titulo)}</div><div class="r-s">${d.direcao==='governo_para_secretaria'?'Governo → '+(d.secretaria?.sigla||'Secretaria'):'Secretaria → Prefeito'}${d.prioridade?' · '+d.prioridade:''}${apoio.length?' · apoio: '+esc(apoio.join(', ')):''}${d.descricao?' · '+esc(d.descricao).slice(0,60):''}</div></div>${apoioBadge(d)}<span class="tag" style="background:#eef1f6;color:#3a4a63">${stLabel[d.status]}</span>${destinoChip(d)}${(!isGlobal()&&d.direcao==='governo_para_secretaria'&&!d.projeto_id&&!d.acao_id&&d.status!=='concluida'&&d.status!=='cancelada')?`<button class="btn sm" data-dest="${d.id}" style="padding:5px 9px">→ Dar destino</button>`:''}${statusSel(d)}</div>`;
   }).join('');
   el.querySelectorAll('select[data-id]').forEach(s=>s.addEventListener('change',onStatus));el.querySelectorAll('[data-dest]').forEach(b=>b.addEventListener('click',()=>openDestino(b.dataset.dest)));
 }
@@ -1424,7 +1432,7 @@ async function gerarLivro(){
 $('#btnGerarLivro')&&$('#btnGerarLivro').addEventListener('click',gerarLivro);
 $('#btnFecharLivro').addEventListener('click',()=>$('#livroOverlay').classList.remove('on'));
 $('#btnImprimir').addEventListener('click',()=>window.print());
-document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));$('#destClose')&&$('#destClose').addEventListener('click',()=>$('#destinoOv').classList.remove('on'));$('#aiTools')&&$('#aiTools').addEventListener('click',e=>{const b=e.target.closest('[data-ai]');if(b)runAI(b.dataset.ai);});$('#fabMaria')&&$('#fabMaria').addEventListener('click',openMariaGoverno);$('#aiPdf')&&$('#aiPdf').addEventListener('click',exportarAvaliacaoPDF);$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(window._aiTxt||'').then(()=>toast('Texto copiado.','ok'));});
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));$('#destClose')&&$('#destClose').addEventListener('click',()=>$('#destinoOv').classList.remove('on'));$('#aiTools')&&$('#aiTools').addEventListener('click',e=>{const b=e.target.closest('[data-ai]');if(b)runAI(b.dataset.ai);});$('#fabMaria')&&$('#fabMaria').addEventListener('click',openMariaGoverno);$('#aiPdf')&&$('#aiPdf').addEventListener('click',exportarAvaliacaoPDF);$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(iaPlain(window._aiTxt)).then(()=>toast('Texto copiado.','ok'));});
 $('#btnToggleProj')&&$('#btnToggleProj').addEventListener('click',()=>$('#projFormWrap').classList.toggle('hide'));
 $('#btnCriarProjeto')&&$('#btnCriarProjeto').addEventListener('click',submitProjeto);
 $('#fichaClose')&&$('#fichaClose').addEventListener('click',()=>$('#projFichaOv').classList.remove('on'));
@@ -1436,16 +1444,18 @@ $('#btnApresentacao')&&$('#btnApresentacao').addEventListener('click',gerarApres
 document.querySelectorAll('[data-go]').forEach(x=>x.addEventListener('click',()=>go(x.dataset.go)));
 function md2html(md){
   const e=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-  const inl=s=>e(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  const bold=s=>e(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
   const lines=String(md||'').split(/\r?\n/);let out='',ul=false,ol=false;
   const close=()=>{if(ul){out+='</ul>';ul=false}if(ol){out+='</ol>';ol=false}};
-  for(let ln of lines){const t=ln.trim();if(!t){close();continue;}let m;
-    if(m=t.match(/^(#{1,6})\s+(.*)/)){close();const lv=m[1].length<=2?'h2':'h3';out+='<'+lv+'>'+inl(m[2])+'</'+lv+'>';continue;}
-    if(m=t.match(/^[-*]\s+(.*)/)){if(ol){out+='</ol>';ol=false}if(!ul){out+='<ul>';ul=true}out+='<li>'+inl(m[1])+'</li>';continue;}
-    if(m=t.match(/^\d+[.)]\s+(.*)/)){if(ul){out+='</ul>';ul=false}if(!ol){out+='<ol>';ol=true}out+='<li>'+inl(m[1])+'</li>';continue;}
-    close();out+='<p>'+inl(t)+'</p>';}
+  for(let ln of lines){let t=ln.trim();t=t.replace(/^#{1,6}\s*/,'');if(!t){close();continue;}let m;
+    if(m=t.match(/^\d+[.)]\s+(.*)/)){if(ul){out+='</ul>';ul=false}if(!ol){out+='<ol>';ol=true}out+='<li>'+bold(m[1])+'</li>';continue;}
+    if(m=t.match(/^[-*•]\s+(.*)/)){if(ol){out+='</ol>';ol=false}if(!ul){out+='<ul>';ul=true}out+='<li>'+bold(m[1])+'</li>';continue;}
+    close();
+    const head=(t.length<=72&&/:$/.test(t))||(t.length<=60&&t===t.toUpperCase()&&/[A-ZÀ-Ú]/.test(t));
+    if(head)out+='<h3>'+bold(t.replace(/:$/,''))+'</h3>';else out+='<p>'+bold(t)+'</p>';}
   close();return out;
 }
+function iaPlain(md){return String(md||'').replace(/^#{1,6}\s*/gm,'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/^\s*[-*]\s+/gm,'• ').trim();}
 function exportarAvaliacaoPDF(){
   const txt=window._aiTxt||'';if(!txt){toast('Gere uma avaliação primeiro.');return;}
   const t=computeTermometro(),tl=termLabel(t.overall);
@@ -1505,7 +1515,7 @@ function openMariaGoverno(){
   $('#aiCopy').style.display='none';$('#aiInstr').value='';$('#aiOv').classList.add('on');
 }
 function openAI(){if(!AI_CTX){toast('Abra um projeto primeiro.');return;}AI_MODE='projeto';$('#aiSub').textContent=AI_CTX['Nome do projeto']||'Projeto';setAiChips('projeto');$('#aiOut').innerHTML='<div class="ai-hint">Escolha uma opção acima — a MarIA usa os dados do projeto aberto.</div>';$('#aiCopy').style.display='none';$('#aiInstr').value='';$('#aiOv').classList.add('on');}
-async function runAI(tarefa){const out=$('#aiOut');out.innerHTML='<div class="ai-hint">MarIA está redigindo…</div>';$('#aiCopy').style.display='none';$('#aiPdf')&&($('#aiPdf').style.display='none');try{const {data,error}=await gov.functions.invoke('ai_assist',{body:{tarefa,projeto:AI_CTX,instrucao:$('#aiInstr').value.trim()}});if(error){out.innerHTML='<div class="ai-hint">Falha ao chamar a MarIA. Confirme se a chave da Anthropic foi configurada na função.</div>';return;}if(data&&data.error){out.innerHTML='<div class="ai-hint">'+esc(data.error)+'</div>';return;}window._aiTxt=(data&&data.texto)||'';out.textContent=window._aiTxt||'(sem resposta)';if(window._aiTxt){$('#aiCopy').style.display='';if(AI_MODE==='governo')$('#aiPdf').style.display='';}}catch(e){out.innerHTML='<div class="ai-hint">Erro: '+esc(String(e))+'</div>';}}
+async function runAI(tarefa){const out=$('#aiOut');out.innerHTML='<div class="ai-hint">MarIA está redigindo…</div>';$('#aiCopy').style.display='none';$('#aiPdf')&&($('#aiPdf').style.display='none');try{const {data,error}=await gov.functions.invoke('ai_assist',{body:{tarefa,projeto:AI_CTX,instrucao:$('#aiInstr').value.trim()}});if(error){out.innerHTML='<div class="ai-hint">Falha ao chamar a MarIA. Confirme se a chave da Anthropic foi configurada na função.</div>';return;}if(data&&data.error){out.innerHTML='<div class="ai-hint">'+esc(data.error)+'</div>';return;}window._aiTxt=(data&&data.texto)||'';out.innerHTML=window._aiTxt?md2html(window._aiTxt):'<div class="ai-hint">(sem resposta)</div>';if(window._aiTxt){$('#aiCopy').style.display='';if(AI_MODE==='governo')$('#aiPdf').style.display='';}}catch(e){out.innerHTML='<div class="ai-hint">Erro: '+esc(String(e))+'</div>';}}
 function toast(msg,type){const c=document.getElementById('toasts');const s=String(msg);if(!type){if(/sem permiss|n[ãa]o foi|falha|erro|inv[áa]lid|muito grande|informe |selecione |escolha |vincule /i.test(s))type='err';else if(/criad|enviad|registrad|gerad|atualizad|salvo|conclu/i.test(s))type='ok';else type='info';}if(!c){return;}const t=document.createElement('div');t.className='toast '+type;t.textContent=s;c.appendChild(t);requestAnimationFrame(()=>t.classList.add('show'));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},4000);}
 function go(v){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
   document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
