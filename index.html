@@ -107,6 +107,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .fgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px 18px}
 .fitem .l{font-size:10.5px;color:var(--tsec);text-transform:uppercase;font-weight:600}
 .fitem .v{font-size:13.5px;font-weight:600;color:#12213c;margin-top:1px}
+.fk-in{width:100%;border:1px solid var(--linha);border-radius:7px;padding:7px 9px;font-size:13px;font-family:inherit;margin-top:3px}
 @media(max-width:640px){.fgrid{grid-template-columns:1fr}}
 
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:20px}
@@ -860,12 +861,15 @@ function renderProjetosKanban(){
 }
 const MODL={pregao_eletronico:'Pregão eletrônico',pregao_presencial:'Pregão presencial',concorrencia:'Concorrência',concurso:'Concurso',leilao:'Leilão',dialogo_competitivo:'Diálogo competitivo',dispensa:'Dispensa',inexigibilidade:'Inexigibilidade',adesao_ata:'Adesão a ata (SRP)',nao_se_aplica:'Não se aplica'};
 const NATL={obra:'Obra',servico:'Serviço',compra:'Compra / Aquisição',programa:'Programa',outro:'Outro'};
+let FICHA_PID=null,FICHA_EXECID=null;
 async function openFichaProjeto(id){
-  const {data:p,error}=await gov.from('projeto').select('codigo,nome,descricao,status,fase,prioridade,natureza,progresso_fisico,progresso_financeiro,data_inicio,data_fim_prevista,beneficiarios,secretaria:secretaria_id(sigla,nome),lider:lider_id(nome,cargo),eixo:eixo_id(nome,cor),execucao_orcamentaria(valor_orcado,empenhado,liquidado,pago),projeto_equipe(papel,servidor:servidor_id(nome,cargo)),projeto_apoio(secretaria:secretaria_id(sigla,nome)),promessa_projeto(promessa:promessa_id(codigo,titulo)),contrato(numero_processo,numero_contrato,modalidade,empresa_nome,empresa_cnpj,valor_contratado,vigencia_inicio,vigencia_fim,fiscal:fiscal_id(nome),gestor:gestor_id(nome))').eq('id',id).maybeSingle();
+  const {data:p,error}=await gov.from('projeto').select('codigo,nome,descricao,status,fase,prioridade,natureza,progresso_fisico,progresso_financeiro,data_inicio,data_fim_prevista,beneficiarios,secretaria_id,secretaria:secretaria_id(sigla,nome),lider:lider_id(nome,cargo),eixo:eixo_id(nome,cor),execucao_orcamentaria(id,valor_orcado,empenhado,liquidado,pago),projeto_equipe(papel,servidor:servidor_id(nome,cargo)),projeto_apoio(secretaria:secretaria_id(sigla,nome)),promessa_projeto(promessa:promessa_id(codigo,titulo)),contrato(numero_processo,numero_contrato,modalidade,empresa_nome,empresa_cnpj,valor_contratado,vigencia_inicio,vigencia_fim,fiscal:fiscal_id(nome),gestor:gestor_id(nome))').eq('id',id).maybeSingle();
   if(error||!p){alert('Não foi possível abrir a ficha do projeto.');return;}
   const sum=k=>(p.execucao_orcamentaria||[]).reduce((a,b)=>a+Number(b[k]||0),0);
   const orc=sum('valor_orcado'),emp=sum('empenhado'),liq=sum('liquidado'),pag=sum('pago');
   const c=(p.contrato||[])[0];
+  FICHA_PID=id;FICHA_EXECID=(p.execucao_orcamentaria&&p.execucao_orcamentaria[0])?p.execucao_orcamentaria[0].id:null;
+  const canEdit=isGlobal()||(ME.secretaria_id&&ME.secretaria_id===p.secretaria_id);
   const it=(l,v)=>`<div class="fitem"><div class="l">${l}</div><div class="v">${v||'—'}</div></div>`;
   let html=`<div class="fsec"><div class="fgrid">${it('Secretaria responsável',esc(p.secretaria?.nome||''))}${it('Líder do projeto',esc(p.lider?.nome||'—'))}${it('Eixo de governo',esc(p.eixo?.nome||'—'))}${it('Natureza',NATL[p.natureza]||'—')}${it('Prioridade',p.prioridade||'—')}${it('Fase',FASEL[p.fase]||p.fase)}${it('Status',SL[p.status]||p.status)}${it('Beneficiários',p.beneficiarios?p.beneficiarios.toLocaleString('pt-BR'):'—')}</div>${p.descricao?`<p style="margin-top:12px;font-size:13px;color:#3a4a63;line-height:1.5">${esc(p.descricao)}</p>`:''}</div>`;
   html+=`<div class="fsec"><h4>Execução física e orçamentária</h4><div class="fgrid">${it('Progresso físico',p.progresso_fisico+'%')}${it('Progresso financeiro',p.progresso_financeiro+'%')}${it('Orçado',brl(orc))}${it('Empenhado',brl(emp))}${it('Liquidado',brl(liq))}${it('Pago',brl(pag))}${it('Início',p.data_inicio?fmtd(p.data_inicio):'—')}${it('Término previsto',p.data_fim_prevista?fmtd(p.data_fim_prevista):'—')}</div></div>`;
@@ -876,10 +880,25 @@ async function openFichaProjeto(id){
   if(ap.length)html+=`<div class="fsec"><h4>Secretarias apoiadoras</h4><div class="chips-wrap">${ap.map(s=>`<span class="chipx">${esc(s)}</span>`).join('')}</div></div>`;
   const pr=(p.promessa_projeto||[]).map(x=>x.promessa).filter(Boolean);
   if(pr.length)html+=`<div class="fsec"><h4>Promessas do Plano de Governo atendidas</h4>${pr.map(x=>`<div style="font-size:12.5px;margin:4px 0"><b style="color:#4e2270">${x.codigo}</b> ${esc(x.titulo)}</div>`).join('')}</div>`;
+  if(canEdit)html+=`<div class="fsec"><h4>Atualizar andamento</h4><div class="fgrid"><div class="fitem"><div class="l">Progresso físico (%)</div><input id="fkPf" type="number" min="0" max="100" value="${p.progresso_fisico}" class="fk-in"></div><div class="fitem"><div class="l">Progresso financeiro (%)</div><input id="fkPfin" type="number" min="0" max="100" value="${p.progresso_financeiro}" class="fk-in"></div><div class="fitem"><div class="l">Status</div><select id="fkStatus" class="fk-in">${['nao_iniciado','no_prazo','em_atencao','critico','concluido'].map(s=>`<option value="${s}" ${s===p.status?'selected':''}>${SL[s]}</option>`).join('')}</select></div><div class="fitem"><div class="l">Fase</div><select id="fkFase" class="fk-in">${['planejamento','licitacao','contratacao','execucao','concluido','suspenso'].map(s=>`<option value="${s}" ${s===p.fase?'selected':''}>${FASEL[s]}</option>`).join('')}</select></div><div class="fitem"><div class="l">Empenhado (R$)</div><input id="fkEmp" type="number" value="${emp}" class="fk-in"></div><div class="fitem"><div class="l">Liquidado (R$)</div><input id="fkLiq" type="number" value="${liq}" class="fk-in"></div><div class="fitem"><div class="l">Pago (R$)</div><input id="fkPag" type="number" value="${pag}" class="fk-in"></div><div class="fitem" style="display:flex;align-items:flex-end"><button class="btn" id="fkSave" style="width:100%">Salvar atualização</button></div></div></div>`;
   $('#fichaBody').innerHTML=html;
   $('#fichaTitulo').textContent=p.nome;
   $('#fichaCod').textContent=(p.codigo||'')+' · '+(FASEL[p.fase]||'');
   $('#projFichaOv').classList.add('on');window.scrollTo(0,0);
+  const sv=$('#fkSave');if(sv)sv.addEventListener('click',saveFichaUpdate);
+}
+async function saveFichaUpdate(){
+  if(!FICHA_PID)return;
+  const pf=Math.max(0,Math.min(100,parseInt($('#fkPf').value)||0));
+  const pfin=Math.max(0,Math.min(100,parseInt($('#fkPfin').value)||0));
+  const st=$('#fkStatus').value,fase=$('#fkFase').value;
+  const {error}=await gov.from('projeto').update({progresso_fisico:pf,progresso_financeiro:pfin,status:st,fase:fase}).eq('id',FICHA_PID);
+  if(error){alert('Sem permissão para atualizar este projeto.');return;}
+  const emp=parseFloat($('#fkEmp').value)||0,liq=parseFloat($('#fkLiq').value)||0,pag=parseFloat($('#fkPag').value)||0;
+  if(FICHA_EXECID){await gov.from('execucao_orcamentaria').update({empenhado:emp,liquidado:liq,pago:pag}).eq('id',FICHA_EXECID);}
+  else if(emp||liq||pag){await gov.from('execucao_orcamentaria').insert({projeto_id:FICHA_PID,exercicio:2026,valor_orcado:0,empenhado:emp,liquidado:liq,pago:pag});}
+  await loadProjetos();renderProjetos();renderPainel();renderMapa();renderGantt();
+  openFichaProjeto(FICHA_PID);
 }
 async function gerarLivro(){
   const btn=$('#btnGerarLivro');const old=btn.textContent;btn.textContent='Gerando…';btn.disabled=true;
