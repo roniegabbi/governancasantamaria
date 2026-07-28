@@ -65,6 +65,30 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .pi .pi-bar{flex:1;height:6px;border-radius:5px;background:#eef1f6;overflow:hidden}
 .pi .pi-bar i{display:block;height:100%;border-radius:5px}
 @media(max-width:900px){.pilar-grid{grid-template-columns:1fr}}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px;margin-bottom:18px}
+.meta-card{background:#fff;border:1px solid var(--linha);border-radius:12px;box-shadow:0 1px 3px rgba(15,40,80,.05);padding:13px 14px}
+.meta-card .mc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.meta-card .mc-ind{font-size:12.5px;font-weight:700;color:#12213c;line-height:1.25}
+.meta-card .mc-pct{font-size:16px;font-weight:800;flex-shrink:0}
+.meta-card .mc-val{font-size:12px;color:var(--tsec);margin-top:9px}
+.meta-card .mc-val b{font-size:18px;color:#0f2544;font-weight:800}
+.meta-card .mc-bar{height:7px;border-radius:5px;background:#eef1f6;overflow:hidden;margin:9px 0 8px}
+.meta-card .mc-bar i{display:block;height:100%;border-radius:5px}
+.meta-card .mc-foot{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--tsec)}
+.meta-card .mc-foot input{width:76px;border:1px solid var(--linha);border-radius:7px;padding:4px 7px;font-size:11.5px;font-family:inherit}
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.kcol{background:#f7f8fb;border:1px solid var(--linha);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:130px}
+.kcol-h{padding:11px 14px;background:#fff;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;color:#12213c;border-bottom:1px solid var(--linha2)}
+.kcount{background:#eef1f6;color:#5f5e5a;font-size:11px;font-weight:700;padding:1px 9px;border-radius:20px}
+.kcol-b{padding:10px;display:flex;flex-direction:column;gap:9px;flex:1;min-height:70px}
+.kcol-b.kover{background:#eef2fb;outline:2px dashed #b5c4e6;outline-offset:-4px}
+.kcard{background:#fff;border:1px solid var(--linha);border-radius:10px;padding:10px 12px;box-shadow:0 1px 2px rgba(15,40,80,.05);cursor:grab}
+.kcard.dragging{opacity:.45}
+.kcard .kc-t{font-size:12.5px;font-weight:600;color:#1e2f4d;line-height:1.3}
+.kcard .kc-m{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}
+.kcard .kc-sec{font-size:10.5px;color:var(--tsec);background:#f1f3f7;padding:2px 7px;border-radius:6px}
+.kempty{font-size:11px;color:var(--mut);text-align:center;padding:14px}
+@media(max-width:820px){.kanban{grid-template-columns:1fr}}
 
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:20px}
 .kpi{background:#fff;border:1px solid var(--linha);border-radius:var(--radius);padding:14px 15px;box-shadow:var(--sombra)}
@@ -252,6 +276,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
             <button class="btn full" id="btnCriarPauta">Registrar pauta</button>
           </div>
         </div>
+        <div class="panel"><div class="p-head"><h3>Quadro de acompanhamento</h3><span class="pill">arraste os cartões entre as colunas</span></div><div class="p-body" id="pautasKanban"></div></div>
         <div class="panel"><div class="p-head"><h3>Todas as pautas</h3></div><div class="p-body" id="pautasList"><div class="loading">Carregando…</div></div></div>
       </section>
 
@@ -283,10 +308,11 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
             <textarea class="full" id="dDesc" placeholder="Descrição (opcional)"></textarea>
             <select id="dSecretaria"></select>
             <select id="dPrioridade"><option value="">Prioridade</option><option>P1</option><option>P2</option><option>P3</option></select>
+            <div class="full" id="dApoioWrap"><div style="font-size:12px;color:var(--tsec);margin-bottom:6px;font-weight:600">Secretarias apoiadoras (que precisam se envolver na execução)</div><select id="dApoioSel"></select><div id="dApoioChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div></div>
             <button class="btn full" id="btnCriarDemanda">Registrar demanda</button>
           </div>
         </div>
-        <div class="panel"><div class="p-head"><h3>Todas as demandas</h3></div><div class="p-body" id="listaDemandas"><div class="loading">Carregando…</div></div></div>
+        <div class="panel"><div class="p-head"><h3>Todas as demandas</h3><input id="demSearch" placeholder="Buscar por código, título ou secretaria" style="border:1px solid var(--linha);border-radius:8px;padding:7px 11px;font-size:12.5px;font-family:inherit;width:280px"></div><div class="p-body" id="listaDemandas"><div class="loading">Carregando…</div></div></div>
       </section>
 
       <section class="view" id="v-projetos">
@@ -455,25 +481,43 @@ function renderGantt(){
   $('#gantt').innerHTML=g||'<div class="empty">Sem projetos com datas.</div>';
 }
 async function loadDemandas(){
-  const {data}=await gov.from('demanda').select('id,titulo,descricao,direcao,status,prioridade,created_at').order('created_at',{ascending:false});
-  const el=$('#listaDemandas');const list=data||[];
-  DEMS=list;renderTermometro();
-  if(!list.length){el.innerHTML='<div class="empty">Nenhuma demanda.</div>';return;}
-  el.innerHTML=list.map(d=>`<div class="row"><div class="r-main"><div class="r-t">${esc(d.titulo)}</div><div class="r-s">${d.direcao==='governo_para_secretaria'?'Governo → Secretaria':'Secretaria → Prefeito'}${d.prioridade?' · '+d.prioridade:''}${d.descricao?' · '+esc(d.descricao).slice(0,70):''}</div></div><span class="tag" style="background:#eef1f6;color:#3a4a63">${stLabel[d.status]}</span>${statusSel(d)}</div>`).join('');
+  const {data}=await gov.from('demanda').select('id,codigo,titulo,descricao,direcao,status,prioridade,created_at,secretaria:secretaria_id(sigla),demanda_apoio(secretaria:secretaria_id(sigla))').order('created_at',{ascending:false});
+  DEMS=data||[];renderTermometro();renderDemandasList();
+}
+function renderDemandasList(){
+  const el=$('#listaDemandas');if(!el)return;const q=(($('#demSearch')||{}).value||'').toLowerCase();
+  let list=DEMS;
+  if(q)list=DEMS.filter(d=>((d.codigo||'')+' '+(d.titulo||'')+' '+(d.secretaria?.sigla||'')+' '+((d.demanda_apoio||[]).map(a=>a.secretaria&&a.secretaria.sigla).join(' '))).toLowerCase().includes(q));
+  if(!list.length){el.innerHTML='<div class="empty">Nenhuma demanda encontrada.</div>';return;}
+  el.innerHTML=list.map(d=>{
+    const apoio=(d.demanda_apoio||[]).map(a=>a.secretaria&&a.secretaria.sigla).filter(Boolean);
+    return `<div class="row"><div class="r-main"><div class="r-t"><span style="font-family:monospace;font-size:11px;color:#4e2270;background:#f0e9f6;padding:1px 6px;border-radius:5px;margin-right:8px">${d.codigo||'—'}</span>${esc(d.titulo)}</div><div class="r-s">${d.direcao==='governo_para_secretaria'?'Governo → '+(d.secretaria?.sigla||'Secretaria'):'Secretaria → Prefeito'}${d.prioridade?' · '+d.prioridade:''}${apoio.length?' · apoio: '+esc(apoio.join(', ')):''}${d.descricao?' · '+esc(d.descricao).slice(0,60):''}</div></div><span class="tag" style="background:#eef1f6;color:#3a4a63">${stLabel[d.status]}</span>${statusSel(d)}</div>`;
+  }).join('');
   el.querySelectorAll('select[data-id]').forEach(s=>s.addEventListener('change',onStatus));
 }
 function statusSel(d){const o=['nova','recebida','em_execucao','concluida','devolvida','cancelada'];return `<select data-id="${d.id}" class="btn ghost sm" style="padding:5px 8px">${o.map(x=>`<option value="${x}" ${x===d.status?'selected':''}>${stLabel[x]}</option>`).join('')}</select>`;}
 async function onStatus(e){const {error}=await gov.from('demanda').update({status:e.target.value}).eq('id',e.target.dataset.id);if(error){alert('Sem permissão para alterar esta demanda.');loadDemandas();}}
+let apoioSel=[]; let SECS=[];
 async function prepForm(){const sel=$('#dSecretaria');
-  if(isGlobal()){const {data}=await gov.from('secretaria').select('id,nome').order('nome');sel.innerHTML='<option value="">Secretaria destino…</option>'+(data||[]).map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join('');}
-  else{sel.innerHTML=`<option value="${ME.secretaria_id}">${esc(ME.secretaria?.nome||'Minha secretaria')}</option>`;}}
+  const {data}=await gov.from('secretaria').select('id,sigla,nome').eq('tipo','secretaria').order('nome');
+  SECS=data||[];
+  if(isGlobal()){sel.innerHTML='<option value="">Secretaria responsável…</option>'+SECS.map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join('');}
+  else{sel.innerHTML=`<option value="${ME.secretaria_id}">${esc(ME.secretaria?.nome||'Minha secretaria')}</option>`;}
+  const ap=$('#dApoioSel'),wrap=$('#dApoioWrap');
+  if(ap){ if(isGlobal()){wrap.style.display='';ap.innerHTML='<option value="">+ adicionar secretaria apoiadora…</option>'+SECS.map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join('');ap.onchange=()=>{const id=ap.value;if(!id)return;const s=SECS.find(x=>x.id===id);if(s&&!apoioSel.find(x=>x.id===id))apoioSel.push(s);ap.value='';renderApoioChips();};} else {wrap.style.display='none';} }
+  renderApoioChips();
+}
+function renderApoioChips(){const c=$('#dApoioChips');if(!c)return;c.innerHTML=apoioSel.map(s=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--azul-cl);color:var(--azul-esc);font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:20px">${esc(s.sigla||s.nome)}<span data-rm="${s.id}" style="cursor:pointer;font-weight:800">×</span></span>`).join('');c.querySelectorAll('[data-rm]').forEach(x=>x.addEventListener('click',()=>{apoioSel=apoioSel.filter(a=>a.id!==x.dataset.rm);renderApoioChips();}));}
 $('#btnCriarDemanda').addEventListener('click',async()=>{
   const titulo=$('#dTitulo').value.trim();if(!titulo){alert('Informe um título.');return;}
-  const secretaria_id=isGlobal()?$('#dSecretaria').value:ME.secretaria_id;if(!secretaria_id){alert('Selecione a secretaria.');return;}
+  const secretaria_id=isGlobal()?$('#dSecretaria').value:ME.secretaria_id;if(!secretaria_id){alert('Selecione a secretaria responsável.');return;}
   const direcao=isGlobal()?'governo_para_secretaria':'secretaria_para_prefeito';
-  const {error}=await gov.from('demanda').insert({titulo,descricao:$('#dDesc').value.trim()||null,direcao,secretaria_id,prioridade:$('#dPrioridade').value||null});
+  const {data,error}=await gov.from('demanda').insert({titulo,descricao:$('#dDesc').value.trim()||null,direcao,secretaria_id,prioridade:$('#dPrioridade').value||null}).select('id,codigo').single();
   if(error){alert('Não foi possível registrar: '+error.message);return;}
-  $('#dTitulo').value='';$('#dDesc').value='';$('#dPrioridade').value='';loadDemandas();});
+  const apoios=apoioSel.filter(s=>s.id!==secretaria_id);
+  if(apoios.length){const {error:e2}=await gov.from('demanda_apoio').insert(apoios.map(s=>({demanda_id:data.id,secretaria_id:s.id})));if(e2)alert('Demanda criada, mas erro ao vincular apoiadoras: '+e2.message);}
+  alert('Demanda '+(data.codigo||'')+' registrada.'+(apoios.length?' '+apoios.length+' secretaria(s) apoiadora(s) notificada(s).':''));
+  $('#dTitulo').value='';$('#dDesc').value='';$('#dPrioridade').value='';apoioSel=[];renderApoioChips();loadDemandas();});
 function renderProjetos(){
   const el=$('#listaProjetos');if(!PROJ.length){el.innerHTML='<div class="empty">Nenhum projeto visível.</div>';return;}
   el.innerHTML=PROJ.map(p=>`<div class="row"><div class="r-main"><div class="r-t">${esc(p.nome)}</div><div class="r-s">${p.codigo} · ${p.secretaria?.sigla||''} · ${p.eixo?.nome||''}</div></div>${p.prioridade?`<span class="pill">${p.prioridade}</span>`:''}<div class="bar"><i style="width:${p.progresso_fisico}%;background:${CR[p.status]}"></i></div><span class="tag" style="background:${CRB[p.status]};color:${CRE[p.status]}">${SL[p.status]}</span></div>`).join('');
@@ -487,7 +531,7 @@ async function loadSecretarias(){
 async function loadPautas(){
   const {data}=await gov.from('pauta').select('id,titulo,descricao,urgencia,status,categoria,prazo,secretaria:secretaria_id(sigla)');
   PAUTAS=(data||[]).sort((a,b)=>sev(a)-sev(b));
-  renderRadar();renderPautasView();renderTermometro();
+  renderRadar();renderPautasView();renderPautasKanban();renderTermometro();
 }
 function renderRadar(){
   const el=$('#radar');const open=PAUTAS.filter(p=>p.status!=='resolvida');
@@ -502,6 +546,27 @@ function renderPautasView(){
   if(!PAUTAS.length){el.innerHTML='<div class="empty">Nenhuma pauta.</div>';return;}
   el.innerHTML=PAUTAS.map(p=>`<div class="row"><div class="r-main"><div class="r-t">${esc(p.titulo)}</div><div class="r-s">${p.categoria?esc(p.categoria)+' · ':''}${p.secretaria?.sigla?esc(p.secretaria.sigla)+' · ':''}${p.prazo?fmtd(p.prazo):'sem prazo'}</div></div><span class="tag" style="background:${UR[p.urgencia]};color:#fff">${UL[p.urgencia]}</span>${isGlobal()?pautaSel(p):`<span class="pill">${PSL[p.status]}</span>`}</div>`).join('');
   el.querySelectorAll('select[data-pid]').forEach(s=>s.addEventListener('change',onPautaStatus));
+}
+function renderPautasKanban(){
+  const el=$('#pautasKanban');if(!el)return;
+  const cols=[['aberta','Aberta','#0b4f8a'],['em_andamento','Em andamento','#d9932a'],['resolvida','Resolvida','#1d9e75']];
+  el.innerHTML='<div class="kanban">'+cols.map(([st,label,col])=>{
+    const items=PAUTAS.filter(p=>p.status===st);
+    const cards=items.map(p=>{const uc=UR[p.urgencia];return `<div class="kcard" draggable="${isGlobal()}" data-id="${p.id}" style="border-left:4px solid ${uc}"><div class="kc-t">${esc(p.titulo)}</div><div class="kc-m"><span class="tag" style="background:${uc}22;color:${uc}">${UL[p.urgencia]}</span>${p.secretaria?.sigla?`<span class="kc-sec">${esc(p.secretaria.sigla)}</span>`:''}${p.prazo?`<span class="kc-sec">${fmtd(p.prazo)}</span>`:''}</div></div>`}).join('')||'<div class="kempty">—</div>';
+    return `<div class="kcol"><div class="kcol-h" style="border-top:3px solid ${col}"><span>${label}</span><span class="kcount">${items.length}</span></div><div class="kcol-b" data-col="${st}">${cards}</div></div>`;
+  }).join('')+'</div>';
+  if(isGlobal())wireKanbanDnD();
+}
+function wireKanbanDnD(){
+  document.querySelectorAll('.kcard[draggable="true"]').forEach(c=>{
+    c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',c.dataset.id);c.classList.add('dragging');});
+    c.addEventListener('dragend',()=>c.classList.remove('dragging'));
+  });
+  document.querySelectorAll('.kcol-b').forEach(col=>{
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('kover');});
+    col.addEventListener('dragleave',()=>col.classList.remove('kover'));
+    col.addEventListener('drop',async e=>{e.preventDefault();col.classList.remove('kover');const id=e.dataTransfer.getData('text/plain');const st=col.dataset.col;const p=PAUTAS.find(x=>x.id===id);if(!p||p.status===st)return;const {error}=await gov.from('pauta').update({status:st}).eq('id',id);if(error){alert('Sem permissão para mover.');}loadPautas();});
+  });
 }
 async function onPautaStatus(e){const {error}=await gov.from('pauta').update({status:e.target.value}).eq('id',e.target.dataset.pid);if(error){alert('Sem permissão.');}loadPautas();}
 $('#btnCriarPauta').addEventListener('click',async()=>{
@@ -541,13 +606,15 @@ function renderPlano(){
     <div class="kpi"><div class="k-top"><div class="k-lbl">Em execução</div><div class="k-ic" style="background:var(--ambar-cl);color:var(--ambar)">▤</div></div><div class="k-val">${exec}</div><div class="k-sub">com projeto ativo</div></div>
     <div class="kpi"><div class="k-top"><div class="k-lbl">Entregues</div><div class="k-ic" style="background:var(--verde-cl);color:var(--verde-esc)">✓</div></div><div class="k-val">${ent}</div><div class="k-sub">concluídas</div></div>
     <div class="kpi"><div class="k-top"><div class="k-lbl">Sem projeto</div><div class="k-ic" style="background:#eef1f6;color:#5f5e5a">!</div></div><div class="k-val">${tot-com}</div><div class="k-sub">a priorizar</div></div></div>`;
-  h+=`<div class="panel"><div class="p-head"><h3>Metas do Plano de Governo</h3><span class="pill">${METAS.length} indicadores</span></div><div class="p-body">`+METAS.map(m=>{
+  h+=`<div class="p-head" style="padding:0 2px 10px;border:none"><h3 style="font-size:15px;font-weight:700;color:#12213c">Metas do Plano de Governo</h3><span class="pill">${METAS.length} indicadores</span></div>`;
+  h+='<div class="meta-grid">'+METAS.map(m=>{
     const pct=m.valor_alvo?Math.min(100,Math.round(m.valor_atual/m.valor_alvo*100)):0;
     const cor=pct>=80?'#1d9e75':pct>=45?'#d9932a':'#d64545';
-    return `<div class="srow"><div class="s-nm">${esc(m.indicador)}<small>Meta ${fmtNum(m.valor_alvo)} ${esc(m.unidade||'')} até ${m.prazo_ano} · atual ${fmtNum(m.valor_atual)}${m.fonte?' · '+esc(m.fonte):''}</small></div>
-      <div class="bar"><i style="width:${pct}%;background:${cor}"></i></div><div class="s-pct" style="color:${cor}">${pct}%</div>
-      ${isGlobal()?`<input type="number" class="meta-in" data-meta="${m.id}" value="${m.valor_atual}" title="Atualizar valor atual" style="width:82px;border:1px solid var(--linha);border-radius:7px;padding:6px 8px;font-size:12px;font-family:inherit">`:''}</div>`;
-  }).join('')+`</div></div>`;
+    return `<div class="meta-card"><div class="mc-top"><div class="mc-ind">${esc(m.indicador)}</div><div class="mc-pct" style="color:${cor}">${pct}%</div></div>
+      <div class="mc-val"><b>${fmtNum(m.valor_atual)}</b><span> / ${fmtNum(m.valor_alvo)} ${esc(m.unidade||'')}</span></div>
+      <div class="mc-bar"><i style="width:${pct}%;background:${cor}"></i></div>
+      <div class="mc-foot"><span>até ${m.prazo_ano}</span>${isGlobal()?`<input type="number" class="meta-in" data-meta="${m.id}" value="${m.valor_atual}" title="Atualizar valor atual">`:'<span></span>'}</div></div>`;
+  }).join('')+'</div>';
   const pilares=['Pessoas','Cidade','Gestão'];
   const PILC={Pessoas:'#1d9e75',Cidade:'#0b4f8a','Gestão':'#662d91'};
   h+='<div class="pilar-grid">'+pilares.map(pil=>{
@@ -719,6 +786,7 @@ $('#btnGerarLivro')&&$('#btnGerarLivro').addEventListener('click',gerarLivro);
 $('#btnFecharLivro').addEventListener('click',()=>$('#livroOverlay').classList.remove('on'));
 $('#btnImprimir').addEventListener('click',()=>window.print());
 document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));
+$('#demSearch')&&$('#demSearch').addEventListener('input',renderDemandasList);
 document.querySelectorAll('[data-go]').forEach(x=>x.addEventListener('click',()=>go(x.dataset.go)));
 function go(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
   document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
