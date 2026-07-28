@@ -81,6 +81,8 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .stile-leg{display:flex;gap:11px;font-size:10.5px;color:var(--tsec);font-weight:600;flex-wrap:wrap}
 .stile-leg span{display:inline-flex;align-items:center;gap:4px}
 .stile-leg i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.stile-nd{background:#f6f6f3;border:1px dashed #d3d1c7!important}
+.stile-nd .stile-sig{color:#7c7b74}
 @media(max-width:900px){.termo-row.dual{grid-template-columns:1fr}}
 .pilar-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:4px}
 .pilar-card{background:#fff;border:1px solid var(--linha);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(15,40,80,.07);display:flex;flex-direction:column}
@@ -508,8 +510,8 @@ async function loadTermometroSecretarias(){
   const el=$('#termoSecs');if(!el||!isGlobal())return;
   const {data,error}=await gov.rpc('termometro_secretarias');
   if(error||!data||!data.length){el.innerHTML='';return;}
-  const tiles=data.map(s=>{const c=secColor(s.indice),bg=secTint(s.indice);return `<div class="stile" style="background:${bg};border-color:${c}44" title="${esc(s.nome)}"><div class="stile-h"><span class="stile-sig">${esc(s.sigla)}</span><span class="stile-idx" style="color:${c}">${s.indice}</span></div><div class="stile-bar"><i style="width:${s.indice}%;background:${c}"></i></div><div class="stile-sub">${s.projetos} projeto(s)</div></div>`}).join('');
-  el.innerHTML=`<div class="panel"><div class="p-head"><h3>Termômetros das Secretarias <span style="font-weight:500;color:var(--tsec);font-size:12px">· gestão à vista</span></h3><div class="stile-leg"><span><i style="background:#d64545"></i>&lt;50</span><span><i style="background:#d9932a"></i>50–60</span><span><i style="background:#2f74c0"></i>61–80</span><span><i style="background:#662d91"></i>&gt;80</span></div></div><div class="p-body"><div class="stile-grid">${tiles}</div></div></div>`;
+  const tiles=data.map(s=>{if(s.indice==null){return `<div class="stile stile-nd" title="${esc(s.nome)} — sem projeto cadastrado"><div class="stile-h"><span class="stile-sig">${esc(s.sigla)}</span><span class="stile-idx" style="color:#b4b2a9">—</span></div><div class="stile-bar"><i style="width:0%"></i></div><div class="stile-sub">sem projeto</div></div>`}const c=secColor(s.indice),bg=secTint(s.indice);return `<div class="stile" style="background:${bg};border-color:${c}44" title="${esc(s.nome)}"><div class="stile-h"><span class="stile-sig">${esc(s.sigla)}</span><span class="stile-idx" style="color:${c}">${s.indice}</span></div><div class="stile-bar"><i style="width:${s.indice}%;background:${c}"></i></div><div class="stile-sub">${s.projetos} projeto(s)</div></div>`}).join('');
+  el.innerHTML=`<div class="panel"><div class="p-head"><h3>Termômetros das Secretarias <span style="font-weight:500;color:var(--tsec);font-size:12px">· gestão à vista</span></h3><div class="stile-leg"><span><i style="background:#d64545"></i>&lt;50</span><span><i style="background:#d9932a"></i>50–60</span><span><i style="background:#2f74c0"></i>61–80</span><span><i style="background:#662d91"></i>&gt;80</span><span><i style="background:#d3d1c7"></i>sem dados</span></div></div><div class="p-body"><div class="stile-grid">${tiles}</div></div></div>`;
 }
 function termoCardHTML(t,opts){
   const tl=termLabel(t.overall),L=251.3,val=Math.max(0,t.overall/100*L);
