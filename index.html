@@ -53,6 +53,16 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .toast.err{border-left-color:#d64545}
 .toast.info{border-left-color:#2f74c0}
 @media(max-width:640px){.toasts{left:14px;right:14px;bottom:14px;max-width:none}}
+.dest-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dest-opt{text-align:left;background:#fff;border:1px solid var(--linha);border-radius:11px;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.dest-opt:hover{border-color:#4e2270;background:#faf7fd}
+.dest-opt b{font-size:13px;color:#4e2270}
+.dest-opt span{font-size:11px;color:var(--tsec);line-height:1.4}
+.destform label{display:block;font-size:11.5px;font-weight:600;color:var(--tsec);margin:10px 0 4px}
+.destform select,.destform textarea,.destform input{width:100%;padding:8px 10px;border:1px solid var(--linha);border-radius:8px;font-size:13px;font-family:inherit}
+.destrow{display:flex;gap:12px}
+.destact{display:flex;justify-content:space-between;margin-top:14px}
+@media(max-width:640px){.dest-grid{grid-template-columns:1fr}.destrow{flex-direction:column}}
 .ai-ov{position:fixed;inset:0;background:rgba(20,10,30,.55);z-index:140;display:none;overflow-y:auto;padding:28px 16px}
 .ai-ov.on{display:block}
 .ai-card{max-width:680px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.3)}
@@ -482,6 +492,8 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 
 <div class="fichaov" id="projFichaOv"><div class="fichacard"><div class="fichahead"><div class="xbtn" id="fichaClose">×</div><h2 id="fichaTitulo"></h2><div class="cod" id="fichaCod"></div><button class="btn sm" id="btnAI" style="margin-left:auto">✨ MarIA</button></div><div class="fichabody" id="fichaBody"></div></div></div>
 
+<div class="ai-ov" id="destinoOv"><div class="ai-card"><div class="ai-head"><b>Dar destino à demanda</b><span id="destSub"></span><div class="xbtn" id="destClose">×</div></div><div id="destBody" style="padding:16px 18px"></div></div></div>
+
 <div class="ai-ov" id="aiOv"><div class="ai-card"><div class="ai-head"><b>✨ MarIA</b><span style="font-size:11px;color:#d9c8ea">assistente de gestão</span><span id="aiSub">Projeto</span><div class="xbtn" id="aiClose">×</div></div><div class="ai-tools"><button class="ai-chip" data-ai="descricao">Descrição / justificativa</button><button class="ai-chip" data-ai="objetivos">Objetivos</button><button class="ai-chip" data-ai="etp">Esboço de ETP</button><button class="ai-chip" data-ai="riscos">Matriz de riscos</button><button class="ai-chip" data-ai="indicadores">Indicadores</button><button class="ai-chip" data-ai="analise">Análise do andamento</button></div><input id="aiInstr" class="ai-instr" placeholder="Orientação adicional (opcional)…"><div class="ai-out" id="aiOut"><div class="ai-hint">Escolha uma opção acima — a MarIA usa os dados do projeto aberto.</div></div><div class="ai-foot"><span class="ai-note">Revise sempre — a MarIA pode errar.</span><button class="btn sm" id="aiCopy" style="display:none">Copiar texto</button></div></div></div>
 
 <div class="livro-ov" id="livroOverlay">
@@ -720,8 +732,51 @@ function renderGantt(){
   }).join('');
   $('#gantt').innerHTML=g||'<div class="empty">Sem projetos com datas.</div>';
 }
+let PENDING_DEM=null,DEST_DEM=null;
+function destinoChip(d){
+  if(d.projeto_id)return `<span class="tag" style="background:#e6f1fb;color:#185fa5">→ ${esc(d.projeto?.codigo||'Projeto')}</span>`;
+  if(d.acao_id)return `<span class="tag" style="background:#eaf3de;color:#3b6d11">→ ${d.acao?.projeto?.codigo?('Ação em '+esc(d.acao.projeto.codigo)):'Ação'}</span>`;
+  return '';
+}
+function openDestino(id){const d=DEMS.find(x=>x.id===id);if(!d)return;DEST_DEM=d;$('#destSub').textContent=(d.codigo||'')+' · '+d.titulo;renderDestinoChooser();$('#destinoOv').classList.add('on');}
+function renderDestinoChooser(){
+  $('#destBody').innerHTML=`<p style="font-size:12.5px;color:var(--tsec);margin-bottom:12px">Escolha o que fazer com esta demanda recebida:</p>
+   <div class="dest-grid">
+     <button class="dest-opt" data-d="proj"><b>① Novo Projeto</b><span>Projeto público completo (líder, equipe, orçamento, fase)</span></button>
+     <button class="dest-opt" data-d="acao"><b>② Ação em projeto</b><span>Entra num projeto em andamento da pasta</span></button>
+     <button class="dest-opt" data-d="tarefa"><b>③ Tarefa simples</b><span>Responsável e prazo, sem virar projeto</span></button>
+   </div>`;
+  document.querySelectorAll('#destBody [data-d]').forEach(b=>b.addEventListener('click',()=>destinoEscolha(b.dataset.d)));
+}
+function destinoEscolha(tipo){
+  const d=DEST_DEM;if(!d)return;
+  if(tipo==='proj'){PENDING_DEM=d.id;$('#destinoOv').classList.remove('on');go('projetos');const w=$('#projFormWrap');if(w)w.classList.remove('hide');if($('#pjNome'))$('#pjNome').value=d.titulo||'';if($('#pjDesc'))$('#pjDesc').value=d.descricao||'';toast('Preencha o projeto — ao salvar, a demanda '+(d.codigo||'')+' será vinculada.','info');setTimeout(()=>{$('#pjNome')&&$('#pjNome').scrollIntoView({behavior:'smooth',block:'center'});},250);return;}
+  const servs=(PJ.servidores||[]);
+  const respOpts='<option value="">Responsável…</option>'+servs.map(s=>`<option value="${s.id}">${esc(s.nome)}${s.eh_secretario?' (Secretário)':''}</option>`).join('');
+  const descVal=esc(d.titulo||'')+(d.descricao?(' — '+esc(d.descricao)):'');
+  if(tipo==='acao'){
+    const projs=PROJ||[];
+    if(!projs.length){$('#destBody').innerHTML='<div class="ai-hint">Ainda não há projetos na sua pasta. Use ① Novo Projeto ou ③ Tarefa simples.</div><div class="destact"><button class="btn ghost sm" id="destBack">← voltar</button></div>';$('#destBack').addEventListener('click',renderDestinoChooser);return;}
+    $('#destBody').innerHTML=`<div class="destform"><label>Projeto de destino</label><select id="destProj">${projs.map(p=>`<option value="${p.id}">${esc(p.codigo||'')} · ${esc(p.nome)}</option>`).join('')}</select><label>Descrição da ação</label><textarea id="destDesc" rows="3">${descVal}</textarea><div class="destrow"><div style="flex:1"><label>Responsável (líder da ação)</label><select id="destResp">${respOpts}</select></div><div><label>Prazo</label><input type="date" id="destPrazo"></div></div><div class="destact"><button class="btn ghost sm" id="destBack">← voltar</button><button class="btn sm" id="destOk">Vincular ação</button></div></div>`;
+    $('#destBack').addEventListener('click',renderDestinoChooser);$('#destOk').addEventListener('click',()=>vincularAcao(false));
+  } else {
+    $('#destBody').innerHTML=`<div class="destform"><label>Descrição da tarefa</label><textarea id="destDesc" rows="3">${descVal}</textarea><div class="destrow"><div style="flex:1"><label>Responsável</label><select id="destResp">${respOpts}</select></div><div><label>Prazo</label><input type="date" id="destPrazo"></div></div><div class="destact"><button class="btn ghost sm" id="destBack">← voltar</button><button class="btn sm" id="destOk">Criar tarefa</button></div></div>`;
+    $('#destBack').addEventListener('click',renderDestinoChooser);$('#destOk').addEventListener('click',()=>vincularAcao(true));
+  }
+}
+async function vincularAcao(simples){
+  const d=DEST_DEM;if(!d)return;
+  const desc=(($('#destDesc')||{}).value||'').trim();if(!desc){toast('Informe a descrição.');return;}
+  const rec={secretaria_id:ME.secretaria_id,descricao:desc,responsavel_id:$('#destResp').value||null,prazo:$('#destPrazo').value||null};
+  if(!simples){rec.projeto_id=$('#destProj').value||null;}
+  const {data:a,error}=await gov.from('acao').insert(rec).select('id').single();
+  if(error){toast('Não foi possível criar a ação: '+error.message);return;}
+  const {error:e2}=await gov.from('demanda').update({acao_id:a.id,status:'em_execucao'}).eq('id',d.id);
+  if(e2){toast('Ação criada, mas não vinculou a demanda: '+e2.message);}else{toast(simples?'Tarefa criada e demanda encaminhada.':'Ação vinculada ao projeto.','ok');}
+  $('#destinoOv').classList.remove('on');loadDemandas();
+}
 async function loadDemandas(){
-  const {data}=await gov.from('demanda').select('id,codigo,titulo,descricao,direcao,status,prioridade,created_at,secretaria:secretaria_id(sigla),demanda_apoio(secretaria:secretaria_id(sigla))').order('created_at',{ascending:false});
+  const {data}=await gov.from('demanda').select('id,codigo,titulo,descricao,direcao,status,prioridade,created_at,projeto_id,acao_id,secretaria:secretaria_id(sigla),projeto:projeto_id(codigo),acao:acao_id(descricao,projeto:projeto_id(codigo)),demanda_apoio(secretaria:secretaria_id(sigla))').order('created_at',{ascending:false});
   DEMS=data||[];renderTermometro();renderDemandasList();
 }
 function renderDemandasList(){
@@ -731,9 +786,9 @@ function renderDemandasList(){
   if(!list.length){el.innerHTML='<div class="empty">Nenhuma demanda encontrada.</div>';return;}
   el.innerHTML=list.map(d=>{
     const apoio=(d.demanda_apoio||[]).map(a=>a.secretaria&&a.secretaria.sigla).filter(Boolean);
-    return `<div class="row"><div class="r-main"><div class="r-t"><span style="font-family:monospace;font-size:11px;color:#4e2270;background:#f0e9f6;padding:1px 6px;border-radius:5px;margin-right:8px">${d.codigo||'—'}</span>${esc(d.titulo)}</div><div class="r-s">${d.direcao==='governo_para_secretaria'?'Governo → '+(d.secretaria?.sigla||'Secretaria'):'Secretaria → Prefeito'}${d.prioridade?' · '+d.prioridade:''}${apoio.length?' · apoio: '+esc(apoio.join(', ')):''}${d.descricao?' · '+esc(d.descricao).slice(0,60):''}</div></div><span class="tag" style="background:#eef1f6;color:#3a4a63">${stLabel[d.status]}</span>${statusSel(d)}</div>`;
+    return `<div class="row"><div class="r-main"><div class="r-t"><span style="font-family:monospace;font-size:11px;color:#4e2270;background:#f0e9f6;padding:1px 6px;border-radius:5px;margin-right:8px">${d.codigo||'—'}</span>${esc(d.titulo)}</div><div class="r-s">${d.direcao==='governo_para_secretaria'?'Governo → '+(d.secretaria?.sigla||'Secretaria'):'Secretaria → Prefeito'}${d.prioridade?' · '+d.prioridade:''}${apoio.length?' · apoio: '+esc(apoio.join(', ')):''}${d.descricao?' · '+esc(d.descricao).slice(0,60):''}</div></div><span class="tag" style="background:#eef1f6;color:#3a4a63">${stLabel[d.status]}</span>${destinoChip(d)}${(!isGlobal()&&d.direcao==='governo_para_secretaria'&&!d.projeto_id&&!d.acao_id&&d.status!=='concluida'&&d.status!=='cancelada')?`<button class="btn sm" data-dest="${d.id}" style="padding:5px 9px">→ Dar destino</button>`:''}${statusSel(d)}</div>`;
   }).join('');
-  el.querySelectorAll('select[data-id]').forEach(s=>s.addEventListener('change',onStatus));
+  el.querySelectorAll('select[data-id]').forEach(s=>s.addEventListener('change',onStatus));el.querySelectorAll('[data-dest]').forEach(b=>b.addEventListener('click',()=>openDestino(b.dataset.dest)));
 }
 function statusSel(d){const o=['nova','recebida','em_execucao','concluida','devolvida','cancelada'];return `<select data-id="${d.id}" class="btn ghost sm" style="padding:5px 8px">${o.map(x=>`<option value="${x}" ${x===d.status?'selected':''}>${stLabel[x]}</option>`).join('')}</select>`;}
 async function onStatus(e){const {error}=await gov.from('demanda').update({status:e.target.value}).eq('id',e.target.dataset.id);if(error){toast('Sem permissão para alterar esta demanda.');loadDemandas();}}
@@ -1008,7 +1063,7 @@ async function submitProjeto(){
   const rec={nome,descricao:$('#pjDesc').value.trim()||null,secretaria_id,natureza:$('#pjNatureza').value||null,eixo_id:$('#pjEixo').value||null,prioridade:$('#pjPrioridade').value||null,lider_id:$('#pjLider').value||null,fase:$('#pjFase').value||'planejamento',status:'nao_iniciado',data_inicio:$('#pjInicio').value||null,data_fim_prevista:$('#pjFim').value||null};
   const {data,error}=await gov.from('projeto').insert(rec).select('id,codigo').single();
   if(error){toast('Não foi possível cadastrar: '+error.message);return;}
-  const pid=data.id;const T=[];
+  const pid=data.id;const T=[];if(PENDING_DEM){T.push(gov.from('demanda').update({projeto_id:pid,status:'em_execucao'}).eq('id',PENDING_DEM));}
   const orc=parseFloat($('#pjOrc').value);if(orc>0)T.push(gov.from('execucao_orcamentaria').insert({projeto_id:pid,exercicio:2026,valor_orcado:orc}));
   if(PJ.equipe.length)T.push(gov.from('projeto_equipe').insert(PJ.equipe.map(s=>({projeto_id:pid,servidor_id:s.id,papel:'tecnico'}))));
   if(PJ.apoio.length)T.push(gov.from('projeto_apoio').insert(PJ.apoio.map(s=>({projeto_id:pid,secretaria_id:s.id}))));
@@ -1016,7 +1071,7 @@ async function submitProjeto(){
   const emp=$('#pjEmpresa').value.trim(),mod=$('#pjModalidade').value,proc=$('#pjProcesso').value.trim();
   if(emp||mod||proc){const vc=parseFloat($('#pjValorC').value);T.push(gov.from('contrato').insert({projeto_id:pid,numero_processo:proc||null,numero_contrato:$('#pjContrato').value.trim()||null,modalidade:mod||null,empresa_nome:emp||null,empresa_cnpj:$('#pjCnpj').value.trim()||null,valor_contratado:vc>0?vc:null,vigencia_inicio:$('#pjVigIni').value||null,vigencia_fim:$('#pjVigFim').value||null,fiscal_id:$('#pjFiscal').value||null,gestor_id:$('#pjGestor').value||null}));}
   const res=await Promise.all(T);const bad=res.find(r=>r&&r.error);
-  toast('Projeto '+(data.codigo||'')+' cadastrado.'+(bad?' (atenção: alguns vínculos não foram salvos)':''));
+  toast('Projeto '+(data.codigo||'')+' cadastrado.'+(bad?' (atenção: alguns vínculos não foram salvos)':'')+(PENDING_DEM?' Demanda vinculada.':''),'ok');if(PENDING_DEM){PENDING_DEM=null;loadDemandas();}
   ['pjNome','pjDesc','pjOrc','pjInicio','pjFim','pjProcesso','pjEmpresa','pjCnpj','pjContrato','pjValorC','pjVigIni','pjVigFim'].forEach(i=>$('#'+i).value='');
   ['pjNatureza','pjEixo','pjPrioridade','pjModalidade','pjFiscal','pjGestor'].forEach(i=>$('#'+i).value='');$('#pjFase').value='planejamento';
   PJ.equipe=[];PJ.apoio=[];PJ.prom=[];renderPJchips();
@@ -1349,7 +1404,7 @@ async function gerarLivro(){
 $('#btnGerarLivro')&&$('#btnGerarLivro').addEventListener('click',gerarLivro);
 $('#btnFecharLivro').addEventListener('click',()=>$('#livroOverlay').classList.remove('on'));
 $('#btnImprimir').addEventListener('click',()=>window.print());
-document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));document.querySelectorAll('[data-ai]').forEach(b=>b.addEventListener('click',()=>runAI(b.dataset.ai)));$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(window._aiTxt||'').then(()=>toast('Texto copiado.','ok'));});
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));$('#destClose')&&$('#destClose').addEventListener('click',()=>$('#destinoOv').classList.remove('on'));document.querySelectorAll('[data-ai]').forEach(b=>b.addEventListener('click',()=>runAI(b.dataset.ai)));$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(window._aiTxt||'').then(()=>toast('Texto copiado.','ok'));});
 $('#btnToggleProj')&&$('#btnToggleProj').addEventListener('click',()=>$('#projFormWrap').classList.toggle('hide'));
 $('#btnCriarProjeto')&&$('#btnCriarProjeto').addEventListener('click',submitProjeto);
 $('#fichaClose')&&$('#fichaClose').addEventListener('click',()=>$('#projFichaOv').classList.remove('on'));
