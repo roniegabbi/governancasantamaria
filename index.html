@@ -51,6 +51,21 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .phero .ov{width:100%;background:linear-gradient(115deg,rgba(52,20,78,.90) 0%,rgba(78,34,112,.46) 46%,rgba(78,34,112,.05) 100%);padding:28px 30px}
 .phero h2{color:#fff;font-size:26px;font-weight:800;margin:0;text-shadow:0 1px 12px rgba(0,0,0,.25)}
 .phero p{color:#e9dff3;font-size:13px;margin-top:3px}
+.pilar-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:4px}
+.pilar-card{background:#fff;border:1px solid var(--linha);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(15,40,80,.07);display:flex;flex-direction:column}
+.pilar-head{padding:16px 16px 15px}
+.pilar-head .ph-name{font-size:18px;font-weight:800;color:#fff;line-height:1}
+.pilar-head .ph-stat{font-size:12px;color:rgba(255,255,255,.92);margin-top:4px}
+.pilar-body{padding:4px 14px 8px;overflow-y:auto;max-height:470px}
+.pi{padding:11px 0;border-bottom:1px solid var(--linha2)}
+.pi:last-child{border:none}
+.pi .pi-t{font-size:12.5px;font-weight:600;color:#1e2f4d;display:flex;gap:6px;line-height:1.3}
+.pi .pi-t b{color:#4e2270;flex-shrink:0}
+.pi .pi-m{display:flex;align-items:center;gap:8px;margin-top:6px}
+.pi .pi-bar{flex:1;height:6px;border-radius:5px;background:#eef1f6;overflow:hidden}
+.pi .pi-bar i{display:block;height:100%;border-radius:5px}
+@media(max-width:900px){.pilar-grid{grid-template-columns:1fr}}
+
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:20px}
 .kpi{background:#fff;border:1px solid var(--linha);border-radius:var(--radius);padding:14px 15px;box-shadow:var(--sombra)}
 .kpi .k-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -534,16 +549,14 @@ function renderPlano(){
       ${isGlobal()?`<input type="number" class="meta-in" data-meta="${m.id}" value="${m.valor_atual}" title="Atualizar valor atual" style="width:82px;border:1px solid var(--linha);border-radius:7px;padding:6px 8px;font-size:12px;font-family:inherit">`:''}</div>`;
   }).join('')+`</div></div>`;
   const pilares=['Pessoas','Cidade','Gestão'];
-  h+=pilares.map(pil=>{
+  const PILC={Pessoas:'#1d9e75',Cidade:'#0b4f8a','Gestão':'#662d91'};
+  h+='<div class="pilar-grid">'+pilares.map(pil=>{
     const ps=proms.filter(p=>p.pilar===pil);const c=ps.filter(p=>p.st!=='sem_projeto').length;
-    return `<div class="panel"><div class="p-head"><h3>${pil}</h3><span class="pill">${c}/${ps.length} com projeto</span></div><div class="p-body">${ps.map(p=>`
-      <div class="srow"><div class="s-nm"><b style="color:#4e2270">${p.codigo}</b> ${esc(p.titulo)}<small>${p.links.length?esc(p.links.map(x=>x.nome).join(' · ')).slice(0,90):'nenhum projeto vinculado'}</small></div>
-      ${p.links.length?`<div class="bar"><i style="width:${p.avg}%;background:${STP[p.st].c}"></i></div><div class="s-pct" style="color:${STP[p.st].t}">${p.avg}%</div>`:''}
-      <span class="tag" style="background:${STP[p.st].b};color:${STP[p.st].t}">${STP[p.st].l}</span></div>
-      ${isGlobal()?`<div style="display:flex;gap:8px;padding:2px 0 10px 0;border-bottom:1px solid var(--linha2)">
-        <select class="vinc-sel" data-prom="${p.id}" style="flex:1;max-width:280px;border:1px solid var(--linha);border-radius:7px;padding:6px 8px;font-size:12px"><option value="">+ vincular projeto…</option>${projOpts}</select>
-        ${p.st==='sem_projeto'?`<button class="btn ghost sm" data-pauta="${p.id}" data-cod="${p.codigo}" data-tit="${esc(p.titulo)}" data-pil="${pil}">Gerar pauta</button>`:''}</div>`:''}`).join('')}</div></div>`;
-  }).join('');
+    const cob=ps.length?Math.round(c/ps.length*100):0;const col=PILC[pil];
+    const donut=`<svg width="54" height="54" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.915" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="5"/><circle cx="21" cy="21" r="15.915" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-dasharray="${cob} ${100-cob}" stroke-dashoffset="25"/><text x="21" y="24.5" text-anchor="middle" font-size="10.5" font-weight="800" fill="#fff">${cob}%</text></svg>`;
+    const rows=ps.map(p=>`<div class="pi"><div class="pi-t"><b>${p.codigo}</b><span>${esc(p.titulo)}</span></div><div class="pi-m">${p.links.length?`<div class="pi-bar"><i style="width:${p.avg}%;background:${STP[p.st].c}"></i></div><span style="font-size:11px;font-weight:700;color:${STP[p.st].t}">${p.avg}%</span>`:'<div class="pi-bar"></div>'}<span class="tag" style="background:${STP[p.st].b};color:${STP[p.st].t}">${STP[p.st].l}</span></div>${isGlobal()?`<div style="display:flex;gap:6px;margin-top:7px"><select class="vinc-sel" data-prom="${p.id}" style="flex:1;min-width:0;border:1px solid var(--linha);border-radius:7px;padding:5px 7px;font-size:11.5px"><option value="">+ vincular projeto…</option>${projOpts}</select>${p.st==='sem_projeto'?`<button class="btn ghost sm" data-pauta="${p.id}" data-cod="${p.codigo}" data-tit="${esc(p.titulo)}" data-pil="${pil}" style="padding:5px 9px;flex-shrink:0">Pauta</button>`:''}</div>`:''}</div>`).join('');
+    return `<div class="pilar-card"><div class="pilar-head" style="background:${col}"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div class="ph-name">${pil}</div><div class="ph-stat">${c} de ${ps.length} com projeto</div></div>${donut}</div></div><div class="pilar-body">${rows}</div></div>`;
+  }).join('')+'</div>';
   $('#planoWrap').innerHTML=h;
   document.querySelectorAll('.meta-in').forEach(el=>el.addEventListener('change',async e=>{
     const {error}=await gov.from('meta_plano').update({valor_atual:Number(e.target.value)}).eq('id',e.target.dataset.meta);
