@@ -267,7 +267,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       <a data-v="plano">Plano de Governo</a>
       <a data-v="mapa">Mapa do Governo</a>
       <a data-v="gantt">Cronograma</a>
-      <div class="navgrp">Área pessoal do Prefeito</div>
+      <div class="navgrp" id="navGrpPessoal">Área pessoal do Prefeito</div>
       <a data-v="pautas">Pautas Pessoais do Prefeito</a>
       <div class="navgrp">Área de trabalho</div>
       <a data-v="demandas">Demandas para as Secretarias</a>
@@ -289,6 +289,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 
       <section class="view on" id="v-painel">
         <div class="phero"><div class="ov"><h2 id="painelTit">Painel do Prefeito</h2><p id="painelSub">Visão consolidada da gestão</p></div></div>
+        <div id="termometroGeral"></div>
         <div id="termometro"></div>
         <div id="radar"></div>
         <div id="alertasAuto"></div>
@@ -301,7 +302,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       </section>
 
       <section class="view" id="v-pautas">
-        <div class="ph"><h2>Pautas Pessoais do Prefeito</h2><p>Assuntos que a Governança sinaliza para o Prefeito cuidar. Aparecem no topo do Painel, por urgência.</p></div>
+        <div class="ph"><h2 id="pautasTit">Pautas Pessoais do Prefeito</h2><p id="pautasSub">Assuntos que a Governança sinaliza para o Prefeito cuidar. Aparecem no topo do Painel, por urgência.</p></div>
         <div class="panel" id="formPautaWrap"><div class="p-head"><h3>Nova pauta</h3></div>
           <div class="form-inline">
             <input class="full" id="pTitulo" placeholder="Título da pauta">
@@ -322,7 +323,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       </section>
 
       <section class="view" id="v-mapa">
-        <div class="ph"><h2>Mapa do Governo</h2><p>Todos os projetos por eixo de governo, coloridos por status. Cada bloco é um projeto.</p></div>
+        <div class="ph"><h2 id="mapaTit">Mapa do Governo</h2><p>Todos os projetos por eixo de governo, coloridos por status. Cada bloco é um projeto.</p></div>
         <div class="leg">
           <span><i style="background:#1d9e75"></i> No prazo</span><span><i style="background:#d9932a"></i> Em atenção</span>
           <span><i style="background:#d64545"></i> Crítico</span><span><i style="background:#0b4f8a"></i> Não iniciado</span>
@@ -337,7 +338,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       </section>
 
       <section class="view" id="v-demandas">
-        <div class="ph"><h2>Demandas para as Secretarias</h2><p>Solicitações e tarefas que o Gabinete direciona às Secretarias para executar e responder — mais pontuais, com prazo, status e ticket. Diferente de <b>Projetos</b>, que são iniciativas estruturadas com orçamento e contrato.</p></div>
+        <div class="ph"><h2 id="demTit">Demandas para as Secretarias</h2><p id="demSub">Solicitações e tarefas que o Gabinete direciona às Secretarias para executar e responder — mais pontuais, com prazo, status e ticket. Diferente de <b>Projetos</b>, que são iniciativas estruturadas com orçamento e contrato.</p></div>
         <div class="panel"><div class="p-head"><h3>Nova demanda</h3></div>
           <div class="form-inline">
             <input class="full" id="dTitulo" placeholder="Título da demanda">
@@ -469,6 +470,15 @@ function computeTermometro(){
   const overall=Math.round(dims.reduce((a,d)=>a+d.s*d.w,0));
   return {overall,dims};
 }
+async function loadTermometroGeral(){
+  const el=$('#termometroGeral');if(!el)return;
+  const {data,error}=await gov.rpc('termometro_geral');
+  if(error||!data){el.innerHTML='';return;}
+  const t=data,tl=termLabel(t.overall),L=251.3,val=Math.max(0,t.overall/100*L);
+  const gauge=`<svg viewBox="0 0 200 118" width="210" height="124" aria-label="Índice ${t.overall}"><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="#eef1f6" stroke-width="16" stroke-linecap="round"/><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="${tl.c}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${val} 1000"/><text x="100" y="86" text-anchor="middle" font-size="40" font-weight="800" fill="${tl.c}">${t.overall}</text><text x="100" y="108" text-anchor="middle" font-size="13" font-weight="700" fill="${tl.c}">${tl.l}</text></svg>`;
+  const dims=(t.dims||[]).map(d=>{const c=termLabel(d.s).c;return `<div class="srow"><div class="s-nm">${d.n}<small>peso ${Math.round(d.w*100)}%</small></div><div class="bar" style="width:150px"><i style="width:${d.s}%;background:${c}"></i></div><div class="s-pct" style="color:${c}">${d.s}</div></div>`}).join('');
+  el.innerHTML=`<div class="panel" style="border-top:3px solid #72bf44"><div class="p-head"><h3>Termômetro do Governo <span style="font-weight:500;color:var(--tsec);font-size:12px">· visão geral da gestão</span></h3><span class="pill" style="background:${tl.c}22;color:${tl.c}">índice ${t.overall}/100 · ${tl.l}</span></div><div class="p-body" style="display:grid;grid-template-columns:minmax(0,220px) 1fr;gap:20px;align-items:center"><div style="text-align:center;background:linear-gradient(180deg,#eef7ea,#e2f0da);border-radius:12px;padding:14px 10px 12px">${gauge}<div style="font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#5a8a3c;font-weight:700;margin-top:2px">Índice Geral de Governo</div></div><div>${dims}</div></div></div>`;
+}
 function renderTermometro(){
   const el=$('#termometro');if(!el)return;
   const t=computeTermometro(),tl=termLabel(t.overall);
@@ -485,9 +495,9 @@ function renderTermometro(){
     if(SNAPS&&SNAPS.length>1){const vals=SNAPS.map(s=>s.indice);const cur=vals[vals.length-1],prev=vals[vals.length-2];const delta=cur-prev;const dc=delta>0?'#1d9e75':delta<0?'#d64545':'#64748b';const ar=delta>0?'▲':delta<0?'▼':'▬';spark=sparkline(vals,320,54,tl.c);deltaHtml=`<div style="text-align:right"><div style="font-size:11.5px;color:var(--tsec)">vs. leitura anterior</div><div style="font-size:20px;font-weight:800;color:${dc}">${ar} ${delta>0?'+':''}${delta}</div></div>`;}
     trendBlock=`<div style="border-top:1px solid var(--linha2);padding:13px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><div style="font-size:11px;color:var(--tsec);font-weight:600;margin-bottom:5px">Tendência do índice · ${(SNAPS||[]).length} leitura(s)</div>${spark||'<span style="font-size:11.5px;color:var(--mut)">registre leituras para ver a evolução</span>'}</div>${deltaHtml}<button id="btnSnap" style="background:${tl.c};color:#fff;border:none;padding:8px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Registrar leitura</button></div>`;
   }
-  el.innerHTML=`<div class="panel"><div class="p-head"><h3>Termômetro do Governo</h3><span class="pill" style="background:${tl.c}22;color:${tl.c}">índice ${t.overall}/100 · ${tl.l}</span></div>
+  el.innerHTML=`<div class="panel"><div class="p-head"><h3>${isGlobal()?'Termômetro do Governo':'Termômetro da Minha Secretaria'}</h3><span class="pill" style="background:${tl.c}22;color:${tl.c}">índice ${t.overall}/100 · ${tl.l}</span></div>
   <div class="p-body" style="display:grid;grid-template-columns:minmax(0,220px) 1fr;gap:20px;align-items:center">
-  <div style="text-align:center;background:linear-gradient(180deg,#f7f3fc,#efe7f7);border-radius:12px;padding:14px 10px 12px">${gauge}<div style="font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#8a76ad;font-weight:700;margin-top:2px">Índice Geral de Governo</div></div>
+  <div style="text-align:center;background:linear-gradient(180deg,#f7f3fc,#efe7f7);border-radius:12px;padding:14px 10px 12px">${gauge}<div style="font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#8a76ad;font-weight:700;margin-top:2px">${isGlobal()?'Índice Geral de Governo':'Índice da Minha Secretaria'}</div></div>
   <div>${dims}</div></div>${trendBlock}</div>`;
   const bs=$('#btnSnap');if(bs)bs.addEventListener('click',()=>registrarSnapshot(false));
 }
@@ -510,7 +520,7 @@ async function loadMe(){
   if(ME.secretaria_id){const {data:s}=await gov.from('secretaria').select('sigla,nome').eq('id',ME.secretaria_id).maybeSingle();ME.secretaria=s;}
   renderId();showApp();
   await loadProjetos();await loadEixos();
-  renderPainel();renderMapa();renderGantt();
+  renderPainel();renderMapa();renderGantt();if(!isGlobal())loadTermometroGeral();
   loadPautas();loadPlano();loadDemandas();renderProjetos();loadSecretarias();loadRelatorios();prepForm();prepProjForm();loadAlertas();loadAuditoria();loadNotif();setTimeout(()=>loadTermHistorico(),1800);
 }
 function renderId(){
@@ -518,7 +528,7 @@ function renderId(){
   $('#uAv').textContent=ini;$('#uNm').textContent=ME.nome;
   $('#uRl').textContent=ME.papel==='prefeito'?'Prefeito — vê tudo':ME.papel==='governanca'?'Governança — vê tudo':('Secretário · '+(ME.secretaria?.sigla||''));
   if(isGlobal()){$('#scope').innerHTML='Você tem <b>visão global</b> — todas as secretarias.';$('#painelTit').textContent='Painel do Prefeito';}
-  else{$('#scope').innerHTML='Ambiente da <b>'+(ME.secretaria?.nome||'sua secretaria')+'</b> — você vê apenas a sua pasta.';$('#painelTit').textContent='Meu Painel';$('#navSec').classList.add('hide');}
+  else{$('#scope').innerHTML='Ambiente da <b>'+(ME.secretaria?.nome||'sua secretaria')+'</b> — você vê apenas a sua pasta.';$('#painelTit').textContent='Meu Painel';$('#navSec').classList.add('hide');var qv=s=>document.querySelector(s);if(qv('[data-v="pautas"]'))qv('[data-v="pautas"]').textContent='Minhas Pautas';if(qv('[data-v="mapa"]'))qv('[data-v="mapa"]').textContent='Mapa da Gestão';if(qv('[data-v="demandas"]'))qv('[data-v="demandas"]').textContent='Demandas a Executar';if(qv('[data-v="projetos"]'))qv('[data-v="projetos"]').textContent='Projetos a Executar';if($('#navGrpPessoal'))$('#navGrpPessoal').textContent='Minha área pessoal';if($('#pautasTit'))$('#pautasTit').textContent='Minhas Pautas Pessoais';if($('#pautasSub'))$('#pautasSub').textContent='Seu quadro pessoal de assuntos da pasta — só você vê e organiza aqui.';if($('#mapaTit'))$('#mapaTit').textContent='Mapa da Gestão';if($('#demTit'))$('#demTit').textContent='Demandas a Executar';if($('#demSub'))$('#demSub').innerHTML='Demandas que a Governança direciona à sua pasta para executar (podem fazer parte de um projeto de outra secretaria). Abaixo você também registra as demandas da sua Secretaria para o Prefeito acompanhar.';}
   $('#navRel').style.display=isGlobal()?'':'none';const gr=$('#navGrpRel');if(gr)gr.style.display=isGlobal()?'':'none';
   $('#navAud').style.display=isGlobal()?'':'none';
 }
@@ -674,15 +684,15 @@ async function loadPautas(){
 function renderRadar(){
   const el=$('#radar');const open=PAUTAS.filter(p=>p.status!=='resolvida');
   if(!open.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="radar"><div class="radar-h"><h3><span class="rh-ic">!</span> Radar do Prefeito — pautas para cuidar</h3><span class="pill">${open.length} aberta(s)</span></div>
+  el.innerHTML=`<div class="radar"><div class="radar-h"><h3><span class="rh-ic">!</span> ${isGlobal()?'Radar do Prefeito — pautas para cuidar':'Minhas pautas para cuidar'}</h3><span class="pill">${open.length} aberta(s)</span></div>
   <div class="radar-grid">${open.map(p=>`<div class="pcard" style="background:${UR[p.urgencia]}"><span class="u">${UL[p.urgencia]}</span><h4>${esc(p.titulo)}</h4>${p.descricao?`<p>${esc(p.descricao)}</p>`:''}<div class="foot"><span>${p.secretaria?.sigla?esc(p.secretaria.sigla)+' · ':''}${p.prazo?fmtd(p.prazo):'sem prazo'}</span><span class="st">${PSL[p.status]}</span></div></div>`).join('')}</div></div>`;
 }
 function pautaSel(p){const o=['aberta','em_andamento','resolvida'];return `<select data-pid="${p.id}" class="btn ghost sm" style="padding:5px 8px">${o.map(x=>`<option value="${x}" ${x===p.status?'selected':''}>${PSL[x]}</option>`).join('')}</select>`;}
 function renderPautasView(){
   const el=$('#pautasList');
-  $('#formPautaWrap').style.display=isGlobal()?'':'none';
+  $('#formPautaWrap').style.display='';
   if(!PAUTAS.length){el.innerHTML='<div class="empty">Nenhuma pauta.</div>';return;}
-  el.innerHTML=PAUTAS.map(p=>`<div class="row"><div class="r-main"><div class="r-t">${esc(p.titulo)}</div><div class="r-s">${p.categoria?esc(p.categoria)+' · ':''}${p.secretaria?.sigla?esc(p.secretaria.sigla)+' · ':''}${p.prazo?fmtd(p.prazo):'sem prazo'}</div></div><span class="tag" style="background:${UR[p.urgencia]};color:#fff">${UL[p.urgencia]}</span>${isGlobal()?pautaSel(p):`<span class="pill">${PSL[p.status]}</span>`}${isGlobal()&&p.secretaria_id?`<button class="btn ghost sm" data-dem="${p.id}" style="padding:5px 9px" title="Transformar em demanda para a secretaria">→ Demanda</button>`:''}</div>`).join('');
+  el.innerHTML=PAUTAS.map(p=>`<div class="row"><div class="r-main"><div class="r-t">${esc(p.titulo)}</div><div class="r-s">${p.categoria?esc(p.categoria)+' · ':''}${p.secretaria?.sigla?esc(p.secretaria.sigla)+' · ':''}${p.prazo?fmtd(p.prazo):'sem prazo'}</div></div><span class="tag" style="background:${UR[p.urgencia]};color:#fff">${UL[p.urgencia]}</span>${pautaSel(p)}${isGlobal()&&p.secretaria_id?`<button class="btn ghost sm" data-dem="${p.id}" style="padding:5px 9px" title="Transformar em demanda para a secretaria">→ Demanda</button>`:''}</div>`).join('');
   el.querySelectorAll('select[data-pid]').forEach(s=>s.addEventListener('change',onPautaStatus));
   el.querySelectorAll('[data-dem]').forEach(b=>b.addEventListener('click',()=>converterPautaDemanda(PAUTAS.find(x=>x.id===b.dataset.dem))));
 }
@@ -691,10 +701,10 @@ function renderPautasKanban(){
   const cols=[['aberta','Aberta','#0b4f8a'],['em_andamento','Em andamento','#d9932a'],['resolvida','Resolvida','#1d9e75']];
   el.innerHTML='<div class="kanban">'+cols.map(([st,label,col],idx)=>{
     const items=PAUTAS.filter(p=>p.status===st);
-    const cards=items.map(p=>{const uc=UR[p.urgencia];return `<div class="kcard" draggable="${isGlobal()}" data-id="${p.id}" style="border-left:4px solid ${uc}"><div class="kc-t">${esc(p.titulo)}</div><div class="kc-m"><span class="tag" style="background:${uc}22;color:${uc}">${UL[p.urgencia]}</span>${p.secretaria?.sigla?`<span class="kc-sec">${esc(p.secretaria.sigla)}</span>`:''}${p.prazo?`<span class="kc-sec">${fmtd(p.prazo)}</span>`:''}</div></div>`}).join('')||'<div class="kempty">—</div>';
+    const cards=items.map(p=>{const uc=UR[p.urgencia];return `<div class="kcard" draggable="true" data-id="${p.id}" style="border-left:4px solid ${uc}"><div class="kc-t">${esc(p.titulo)}</div><div class="kc-m"><span class="tag" style="background:${uc}22;color:${uc}">${UL[p.urgencia]}</span>${p.secretaria?.sigla?`<span class="kc-sec">${esc(p.secretaria.sigla)}</span>`:''}${p.prazo?`<span class="kc-sec">${fmtd(p.prazo)}</span>`:''}</div></div>`}).join('')||'<div class="kempty">—</div>';
     return `<div class="kcol"><div class="kcol-h" style="border-top:3px solid ${col}"><span>${label}</span><span class="kcount">${items.length}</span></div><div class="kcol-b" data-col="${st}">${cards}</div></div>`+(idx<2?`<div class="karrow">→</div>`:``);
   }).join('')+'</div>';
-  if(isGlobal())wireKanbanDnD();
+  wireKanbanDnD();
 }
 function wireKanbanDnD(){
   document.querySelectorAll('.kcard[draggable="true"]').forEach(c=>{
@@ -916,7 +926,7 @@ async function submitProjeto(){
   ['pjNome','pjDesc','pjOrc','pjInicio','pjFim','pjProcesso','pjEmpresa','pjCnpj','pjContrato','pjValorC','pjVigIni','pjVigFim'].forEach(i=>$('#'+i).value='');
   ['pjNatureza','pjEixo','pjPrioridade','pjModalidade','pjFiscal','pjGestor'].forEach(i=>$('#'+i).value='');$('#pjFase').value='planejamento';
   PJ.equipe=[];PJ.apoio=[];PJ.prom=[];renderPJchips();
-  await loadProjetos();renderProjetos();renderPainel();renderMapa();renderGantt();
+  await loadProjetos();renderProjetos();renderPainel();renderMapa();renderGantt();if(!isGlobal())loadTermometroGeral();
   $('#projFormWrap').classList.add('hide');
 }
 function renderProjetosKanban(){
@@ -981,7 +991,7 @@ async function saveFichaUpdate(){
   const emp=parseFloat($('#fkEmp').value)||0,liq=parseFloat($('#fkLiq').value)||0,pag=parseFloat($('#fkPag').value)||0;
   if(FICHA_EXECID){await gov.from('execucao_orcamentaria').update({empenhado:emp,liquidado:liq,pago:pag}).eq('id',FICHA_EXECID);}
   else if(emp||liq||pag){await gov.from('execucao_orcamentaria').insert({projeto_id:FICHA_PID,exercicio:2026,valor_orcado:0,empenhado:emp,liquidado:liq,pago:pag});}
-  await loadProjetos();renderProjetos();renderPainel();renderMapa();renderGantt();
+  await loadProjetos();renderProjetos();renderPainel();renderMapa();renderGantt();if(!isGlobal())loadTermometroGeral();
   openFichaProjeto(FICHA_PID);
 }
 function computeAlertas(){
