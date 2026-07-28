@@ -52,6 +52,10 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .toast.ok{border-left-color:#1d9e75}
 .toast.err{border-left-color:#d64545}
 .toast.info{border-left-color:#2f74c0}
+.fab-maria{position:fixed;right:22px;bottom:22px;z-index:120;background:linear-gradient(135deg,#7a3fb0,#4e2270);color:#fff;border:none;border-radius:30px;padding:13px 18px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(78,34,112,.42);display:none;align-items:center;gap:8px}
+.fab-maria.on{display:inline-flex}
+.fab-maria:hover{filter:brightness(1.08)}
+@media(max-width:640px){.fab-maria{right:14px;bottom:70px;padding:12px 15px;font-size:13px}}
 @media(max-width:640px){.toasts{left:14px;right:14px;bottom:14px;max-width:none}}
 .dest-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .dest-opt{text-align:left;background:#fff;border:1px solid var(--linha);border-radius:11px;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
@@ -494,7 +498,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 
 <div class="ai-ov" id="destinoOv"><div class="ai-card"><div class="ai-head"><b>Dar destino à demanda</b><span id="destSub"></span><div class="xbtn" id="destClose">×</div></div><div id="destBody" style="padding:16px 18px"></div></div></div>
 
-<div class="ai-ov" id="aiOv"><div class="ai-card"><div class="ai-head"><b>✨ MarIA</b><span style="font-size:11px;color:#d9c8ea">assistente de gestão</span><span id="aiSub">Projeto</span><div class="xbtn" id="aiClose">×</div></div><div class="ai-tools"><button class="ai-chip" data-ai="descricao">Descrição / justificativa</button><button class="ai-chip" data-ai="objetivos">Objetivos</button><button class="ai-chip" data-ai="etp">Esboço de ETP</button><button class="ai-chip" data-ai="riscos">Matriz de riscos</button><button class="ai-chip" data-ai="indicadores">Indicadores</button><button class="ai-chip" data-ai="analise">Análise do andamento</button></div><input id="aiInstr" class="ai-instr" placeholder="Orientação adicional (opcional)…"><div class="ai-out" id="aiOut"><div class="ai-hint">Escolha uma opção acima — a MarIA usa os dados do projeto aberto.</div></div><div class="ai-foot"><span class="ai-note">Revise sempre — a MarIA pode errar.</span><button class="btn sm" id="aiCopy" style="display:none">Copiar texto</button></div></div></div>
+<div class="ai-ov" id="aiOv"><div class="ai-card"><div class="ai-head"><b>✨ MarIA</b><span style="font-size:11px;color:#d9c8ea">assistente de gestão</span><span id="aiSub">Projeto</span><div class="xbtn" id="aiClose">×</div></div><div class="ai-tools" id="aiTools"></div><input id="aiInstr" class="ai-instr" placeholder="Orientação adicional (opcional)…"><div class="ai-out" id="aiOut"><div class="ai-hint">Escolha uma opção acima — a MarIA usa os dados do projeto aberto.</div></div><div class="ai-foot"><span class="ai-note">Revise sempre — a MarIA pode errar.</span><button class="btn sm" id="aiPdf" style="display:none">⬇ Exportar PDF</button><button class="btn sm" id="aiCopy" style="display:none">Copiar texto</button></div></div></div>
 
 <div class="livro-ov" id="livroOverlay">
   <div class="livro-bar">
@@ -505,6 +509,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
   <div class="book" id="bookContent"></div>
 </div>
 
+<button class="fab-maria" id="fabMaria" aria-label="MarIA — avaliação do Governo">✨ MarIA</button>
 <div id="toasts" class="toasts"></div>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -556,6 +561,7 @@ async function loadTermometroSecretarias(){
   const el=$('#termoSecs');if(!el||!isGlobal())return;
   const {data,error}=await gov.rpc('termometro_secretarias');
   if(error||!data||!data.length){el.innerHTML='';return;}
+  SECS_TERM=data;
   const tile=s=>{if(s.indice==null){return `<div class="stile stile-nd" title="${esc(s.nome)} — sem projeto cadastrado"><div class="stile-h"><span class="stile-sig">${esc(s.sigla)}</span><span class="stile-idx" style="color:#b4b2a9">—</span></div><div class="stile-bar"><i style="width:0%"></i></div><div class="stile-sub">sem projeto</div></div>`}const c=secColor(s.indice),bg=secTint(s.indice);return `<div class="stile" style="background:${bg};border-color:${c}44" title="${esc(s.nome)}"><div class="stile-h"><span class="stile-sig">${esc(s.sigla)}</span><span class="stile-idx" style="color:${c}">${s.indice}</span></div><div class="stile-bar"><i style="width:${s.indice}%;background:${c}"></i></div><div class="stile-sub">${s.projetos} projeto(s)</div></div>`};
   const bands=[
     {l:'Excelente · acima de 80',c:'#662d91',f:s=>s.indice!=null&&s.indice>80},
@@ -631,7 +637,7 @@ function renderId(){
   const ini=ME.nome.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
   $('#uAv').textContent=ini;$('#uNm').textContent=ME.nome;
   $('#uRl').textContent=ME.papel==='prefeito'?'Prefeito — vê tudo':ME.papel==='governanca'?'Governança — vê tudo':('Secretário · '+(ME.secretaria?.sigla||''));
-  if(isGlobal()){$('#scope').innerHTML='Você tem <b>visão global</b> — todas as secretarias.';$('#painelTit').textContent='Painel do Prefeito';}
+  if(isGlobal()){$('#scope').innerHTML='Você tem <b>visão global</b> — todas as secretarias.';$('#painelTit').textContent='Painel do Prefeito';$('#fabMaria')&&$('#fabMaria').classList.add('on');}
   else{$('#scope').innerHTML='Ambiente da <b>'+(ME.secretaria?.nome||'sua secretaria')+'</b> — você vê apenas a sua pasta.';$('#painelTit').textContent='Meu Painel';$('#navSec').classList.add('hide');var qv=s=>document.querySelector(s);if(qv('[data-v="pautas"]'))qv('[data-v="pautas"]').textContent='Minhas Pautas';if(qv('[data-v="mapa"]'))qv('[data-v="mapa"]').textContent='Mapa da Gestão';if(qv('[data-v="demandas"]'))qv('[data-v="demandas"]').textContent='Demandas a Executar';if(qv('[data-v="projetos"]'))qv('[data-v="projetos"]').textContent='Projetos a Executar';if($('#navGrpPessoal'))$('#navGrpPessoal').textContent='Minha área pessoal';if($('#pautasTit'))$('#pautasTit').textContent='Minhas Pautas Pessoais';if($('#pautasSub'))$('#pautasSub').textContent='Seu quadro pessoal de assuntos da pasta — só você vê e organiza aqui.';if($('#mapaTit'))$('#mapaTit').textContent='Mapa da Gestão';var _tr=document.getElementById('termoRow');if(_tr)_tr.classList.add('dual');if($('#demTit'))$('#demTit').textContent='Demandas a Executar';if($('#demSub'))$('#demSub').innerHTML='Demandas que a Governança direciona à sua pasta para executar (podem fazer parte de um projeto de outra secretaria). Abaixo você também registra as demandas da sua Secretaria para o Prefeito acompanhar.';}
   $('#navRel').style.display=isGlobal()?'':'none';const gr=$('#navGrpRel');if(gr)gr.style.display=isGlobal()?'':'none';
   $('#navAud').style.display=isGlobal()?'':'none';
@@ -732,7 +738,7 @@ function renderGantt(){
   }).join('');
   $('#gantt').innerHTML=g||'<div class="empty">Sem projetos com datas.</div>';
 }
-let PENDING_DEM=null,DEST_DEM=null;
+let PENDING_DEM=null,DEST_DEM=null,SECS_TERM=[],AI_MODE='projeto';
 function destinoChip(d){
   if(d.projeto_id)return `<span class="tag" style="background:#e6f1fb;color:#185fa5">→ ${esc(d.projeto?.codigo||'Projeto')}</span>`;
   if(d.acao_id)return `<span class="tag" style="background:#eaf3de;color:#3b6d11">→ ${d.acao?.projeto?.codigo?('Ação em '+esc(d.acao.projeto.codigo)):'Ação'}</span>`;
@@ -1404,7 +1410,7 @@ async function gerarLivro(){
 $('#btnGerarLivro')&&$('#btnGerarLivro').addEventListener('click',gerarLivro);
 $('#btnFecharLivro').addEventListener('click',()=>$('#livroOverlay').classList.remove('on'));
 $('#btnImprimir').addEventListener('click',()=>window.print());
-document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));$('#destClose')&&$('#destClose').addEventListener('click',()=>$('#destinoOv').classList.remove('on'));document.querySelectorAll('[data-ai]').forEach(b=>b.addEventListener('click',()=>runAI(b.dataset.ai)));$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(window._aiTxt||'').then(()=>toast('Texto copiado.','ok'));});
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));$('#destClose')&&$('#destClose').addEventListener('click',()=>$('#destinoOv').classList.remove('on'));$('#aiTools')&&$('#aiTools').addEventListener('click',e=>{const b=e.target.closest('[data-ai]');if(b)runAI(b.dataset.ai);});$('#fabMaria')&&$('#fabMaria').addEventListener('click',openMariaGoverno);$('#aiPdf')&&$('#aiPdf').addEventListener('click',exportarAvaliacaoPDF);$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(window._aiTxt||'').then(()=>toast('Texto copiado.','ok'));});
 $('#btnToggleProj')&&$('#btnToggleProj').addEventListener('click',()=>$('#projFormWrap').classList.toggle('hide'));
 $('#btnCriarProjeto')&&$('#btnCriarProjeto').addEventListener('click',submitProjeto);
 $('#fichaClose')&&$('#fichaClose').addEventListener('click',()=>$('#projFichaOv').classList.remove('on'));
@@ -1414,8 +1420,78 @@ $('#audFiltro')&&$('#audFiltro').addEventListener('change',renderAuditoria);
 $('#btnLivroRel')&&$('#btnLivroRel').addEventListener('click',gerarLivro);
 $('#btnApresentacao')&&$('#btnApresentacao').addEventListener('click',gerarApresentacao);
 document.querySelectorAll('[data-go]').forEach(x=>x.addEventListener('click',()=>go(x.dataset.go)));
-function openAI(){if(!AI_CTX){toast('Abra um projeto primeiro.');return;}$('#aiSub').textContent=AI_CTX['Nome do projeto']||'Projeto';$('#aiOut').innerHTML='<div class="ai-hint">Escolha uma opção acima — a MarIA usa os dados do projeto aberto.</div>';$('#aiCopy').style.display='none';$('#aiInstr').value='';$('#aiOv').classList.add('on');}
-async function runAI(tarefa){const out=$('#aiOut');out.innerHTML='<div class="ai-hint">MarIA está redigindo…</div>';$('#aiCopy').style.display='none';try{const {data,error}=await gov.functions.invoke('ai_assist',{body:{tarefa,projeto:AI_CTX,instrucao:$('#aiInstr').value.trim()}});if(error){out.innerHTML='<div class="ai-hint">Falha ao chamar a MarIA. Confirme se a chave da Anthropic foi configurada na função.</div>';return;}if(data&&data.error){out.innerHTML='<div class="ai-hint">'+esc(data.error)+'</div>';return;}window._aiTxt=(data&&data.texto)||'';out.textContent=window._aiTxt||'(sem resposta)';if(window._aiTxt)$('#aiCopy').style.display='';}catch(e){out.innerHTML='<div class="ai-hint">Erro: '+esc(String(e))+'</div>';}}
+function md2html(md){
+  const e=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const inl=s=>e(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  const lines=String(md||'').split(/\r?\n/);let out='',ul=false,ol=false;
+  const close=()=>{if(ul){out+='</ul>';ul=false}if(ol){out+='</ol>';ol=false}};
+  for(let ln of lines){const t=ln.trim();if(!t){close();continue;}let m;
+    if(m=t.match(/^(#{1,6})\s+(.*)/)){close();const lv=m[1].length<=2?'h2':'h3';out+='<'+lv+'>'+inl(m[2])+'</'+lv+'>';continue;}
+    if(m=t.match(/^[-*]\s+(.*)/)){if(ol){out+='</ol>';ol=false}if(!ul){out+='<ul>';ul=true}out+='<li>'+inl(m[1])+'</li>';continue;}
+    if(m=t.match(/^\d+[.)]\s+(.*)/)){if(ul){out+='</ul>';ul=false}if(!ol){out+='<ol>';ol=true}out+='<li>'+inl(m[1])+'</li>';continue;}
+    close();out+='<p>'+inl(t)+'</p>';}
+  close();return out;
+}
+function exportarAvaliacaoPDF(){
+  const txt=window._aiTxt||'';if(!txt){toast('Gere uma avaliação primeiro.');return;}
+  const t=computeTermometro(),tl=termLabel(t.overall);
+  const tot=PROJ.length,ok=PROJ.filter(p=>p.status==='no_prazo'||p.status==='concluido').length,cr=PROJ.filter(p=>p.status==='critico').length;
+  const emp=PROJ.reduce((a,p)=>a+(p.emp||0),0),orc=PROJ.reduce((a,p)=>a+(p.orc||0),0);
+  const col=v=>v==null?'#b4b2a9':v<50?'#d64545':v<=60?'#d9932a':v<=80?'#2f74c0':'#662d91';
+  const secs=(SECS_TERM||[]).slice().sort((a,b)=>(b.indice==null?-1:b.indice)-(a.indice==null?-1:a.indice));
+  const chips=secs.map(s=>`<span style="display:inline-block;border:1px solid ${col(s.indice)}55;background:${col(s.indice)}14;color:${col(s.indice)};font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;margin:0 5px 5px 0">${s.sigla} ${s.indice==null?'—':s.indice}</span>`).join('');
+  const dataStr=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const kpi=(v,l,c)=>`<div style="flex:1;background:#fff;border:1px solid #e5e9f0;border-top:3px solid ${c};border-radius:10px;padding:10px 12px"><div style="font-size:20px;font-weight:800;color:#0f2544">${v}</div><div style="font-size:10px;color:#64748b">${l}</div></div>`;
+  const brl=n=>'R$ '+(Number(n||0)/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi';
+  const body=`<div class="hero"><div><div class="kick">Documento de apoio à gestão</div><h1>Avaliação do Governo</h1><div class="sub">Prefeitura Municipal de Santa Maria · ${dataStr}</div></div><div class="logo"><img src="${LOGO}"></div></div>
+  <div class="band"><div class="gauge"><div class="idx" style="color:${tl.c}">${t.overall}</div><div class="idxl">Índice geral · ${tl.l}</div></div><div class="kpis">${kpi(tot,'Projetos','#662d91')}${kpi(ok,'No prazo','#72bf44')}${kpi(cr,'Críticos','#d64545')}${kpi(brl(emp),'Investido','#4e2270')}</div></div>
+  <div class="secs"><div class="secs-t">Termômetro das Secretarias</div>${chips}</div>
+  <div class="analise">${md2html(txt)}</div>
+  <div class="foot">Gerado pela MarIA (IA) a partir dos indicadores da plataforma de Governança · Revisão humana recomendada · Prefeitura Municipal de Santa Maria</div>`;
+  const css=`@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:'Figtree','Segoe UI',Arial,sans-serif;color:#26364f;font-size:12px;line-height:1.55;margin:0}
+  .hero{background:linear-gradient(135deg,#4e2270,#7a3fb0);color:#fff;border-radius:12px;padding:18px 22px;display:flex;justify-content:space-between;align-items:center}
+  .hero .kick{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#e6d8f4;font-weight:700}
+  .hero h1{margin:3px 0;font-size:24px;font-weight:800}.hero .sub{font-size:12px;color:#e9dff3}
+  .hero .logo{background:#fff;border-radius:10px;padding:8px 12px}.hero .logo img{height:40px;display:block}
+  .band{display:flex;gap:14px;align-items:stretch;margin:16px 0}
+  .gauge{width:150px;background:linear-gradient(180deg,#f7f3fc,#efe7f7);border-radius:12px;padding:14px;text-align:center;display:flex;flex-direction:column;justify-content:center}
+  .gauge .idx{font-size:44px;font-weight:800;line-height:1}.gauge .idxl{font-size:11px;color:#8a76ad;font-weight:700;margin-top:2px}
+  .kpis{flex:1;display:flex;gap:10px}
+  .secs{margin:6px 0 14px}.secs-t{font-size:12px;font-weight:800;color:#4e2270;margin-bottom:7px}
+  .analise{margin-top:6px}.analise h2{font-size:15px;color:#4e2270;border-bottom:2px solid #efe7f7;padding-bottom:4px;margin:16px 0 8px}
+  .analise h3{font-size:13px;color:#26364f;margin:12px 0 5px}.analise p{margin:6px 0}.analise ul,.analise ol{margin:6px 0 6px 18px}.analise li{margin:3px 0}
+  .foot{margin-top:20px;border-top:1px solid #e5e9f0;padding-top:8px;font-size:10px;color:#94a3b8;text-align:center}
+  @media print{.noprint{display:none}}`;
+  const w=window.open('','_blank');
+  if(!w){toast('Permita pop-ups para exportar o PDF.');return;}
+  w.document.write('<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><title>Avaliação do Governo — Santa Maria</title><style>'+css+'</style></head><body>'+body+'<div class="noprint" style="text-align:center;margin:16px 0"><button onclick="window.print()" style="background:#4e2270;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Imprimir / Salvar PDF</button></div><script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script></body></html>');
+  w.document.close();
+}
+function setAiChips(mode){
+  const el=$('#aiTools');if(!el)return;
+  const proj=[['descricao','Descrição / justificativa'],['objetivos','Objetivos'],['etp','Esboço de ETP'],['riscos','Matriz de riscos'],['indicadores','Indicadores'],['analise','Análise do andamento']];
+  const gov=[['gov_avaliacao','Avaliação completa do Governo'],['gov_secretarias','Desempenho das Secretarias'],['gov_acoes','Ações sugeridas ao Prefeito']];
+  const list=mode==='governo'?gov:proj;
+  el.innerHTML=list.map(([k,l])=>`<button class="ai-chip" data-ai="${k}">${l}</button>`).join('');
+}
+function govContexto(){
+  const t=computeTermometro(),tl=termLabel(t.overall);
+  const tot=PROJ.length,ok=PROJ.filter(p=>p.status==='no_prazo'||p.status==='concluido').length,at=PROJ.filter(p=>p.status==='em_atencao').length,cr=PROJ.filter(p=>p.status==='critico').length,conc=PROJ.filter(p=>p.status==='concluido').length;
+  const orc=PROJ.reduce((a,p)=>a+(p.orc||0),0),emp=PROJ.reduce((a,p)=>a+(p.emp||0),0);
+  const promT=(PROMS||[]).length,promC=(PROMS||[]).filter(p=>p.st&&p.st!=='sem_projeto').length;
+  const secs=(SECS_TERM||[]).map(s=>`${s.sigla} ${s.indice==null?'(sem projetos)':('índice '+s.indice+', '+s.projetos+' proj.')}`).join('; ');
+  const dims=t.dims.map(d=>d.n+' '+d.s).join('; ');
+  return {'Índice geral do Governo':t.overall+'/100 ('+tl.l+')','Dimensões do índice':dims,'Projetos no total':tot,'No prazo':ok,'Em atenção':at,'Críticos':cr,'Concluídos':conc,'Orçado (R$)':Math.round(orc),'Empenhado (R$)':Math.round(emp),'Plano de Governo':promC+' de '+promT+' diretrizes já com projeto','Índice por Secretaria':secs||'(sem dados)'};
+}
+function openMariaGoverno(){
+  AI_MODE='governo';AI_CTX=govContexto();
+  $('#aiSub').textContent='Governo — visão geral';
+  setAiChips('governo');
+  $('#aiOut').innerHTML='<div class="ai-hint">Escolha uma análise — a MarIA usa os indicadores do Governo (índice geral, projetos, plano e o desempenho das secretarias).</div>';
+  $('#aiCopy').style.display='none';$('#aiInstr').value='';$('#aiOv').classList.add('on');
+}
+function openAI(){if(!AI_CTX){toast('Abra um projeto primeiro.');return;}AI_MODE='projeto';$('#aiSub').textContent=AI_CTX['Nome do projeto']||'Projeto';setAiChips('projeto');$('#aiOut').innerHTML='<div class="ai-hint">Escolha uma opção acima — a MarIA usa os dados do projeto aberto.</div>';$('#aiCopy').style.display='none';$('#aiInstr').value='';$('#aiOv').classList.add('on');}
+async function runAI(tarefa){const out=$('#aiOut');out.innerHTML='<div class="ai-hint">MarIA está redigindo…</div>';$('#aiCopy').style.display='none';$('#aiPdf')&&($('#aiPdf').style.display='none');try{const {data,error}=await gov.functions.invoke('ai_assist',{body:{tarefa,projeto:AI_CTX,instrucao:$('#aiInstr').value.trim()}});if(error){out.innerHTML='<div class="ai-hint">Falha ao chamar a MarIA. Confirme se a chave da Anthropic foi configurada na função.</div>';return;}if(data&&data.error){out.innerHTML='<div class="ai-hint">'+esc(data.error)+'</div>';return;}window._aiTxt=(data&&data.texto)||'';out.textContent=window._aiTxt||'(sem resposta)';if(window._aiTxt){$('#aiCopy').style.display='';if(AI_MODE==='governo')$('#aiPdf').style.display='';}}catch(e){out.innerHTML='<div class="ai-hint">Erro: '+esc(String(e))+'</div>';}}
 function toast(msg,type){const c=document.getElementById('toasts');const s=String(msg);if(!type){if(/sem permiss|n[ãa]o foi|falha|erro|inv[áa]lid|muito grande|informe |selecione |escolha |vincule /i.test(s))type='err';else if(/criad|enviad|registrad|gerad|atualizad|salvo|conclu/i.test(s))type='ok';else type='info';}if(!c){return;}const t=document.createElement('div');t.className='toast '+type;t.textContent=s;c.appendChild(t);requestAnimationFrame(()=>t.classList.add('show'));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},4000);}
 function go(v){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
   document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
