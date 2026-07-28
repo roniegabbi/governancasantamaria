@@ -330,6 +330,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       <div class="kick">Prefeitura de Santa Maria</div>
       <h2>Governança da Gestão, em um só lugar</h2>
       <p>Pautas de governo, projetos, orçamento, cumprimento do plano e resultados — para o Prefeito e cada Secretaria.</p>
+      <div style="font-weight:800;font-size:22px;color:#fff;margin-top:16px;letter-spacing:.5px">Inovar é Cuidar</div>
       <div class="gbar"></div>
     </div>
   </div>
@@ -409,7 +410,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       </section>
 
       <section class="view" id="v-plano">
-        <div class="ph"><h2>Plano de Governo — Todos por Santa Maria (2025–2028)</h2><p>Conciliação entre as promessas do Plano de Governo e os projetos em execução — quanto do plano já virou ação.</p></div>
+        <div class="ph"><h2>Plano de Governo — Inovar é Cuidar (2025–2028)</h2><p>Conciliação entre as promessas do Plano de Governo e os projetos em execução — quanto do plano já virou ação.</p></div>
         <div id="planoWrap"><div class="loading">Carregando…</div></div>
       </section>
 
@@ -1304,7 +1305,7 @@ async function openPlacarPublico(){
   const pil=d.por_pilar||[],metas=d.metas||[];
   el.innerHTML=`<div style="text-align:center;margin-bottom:8px"><div style="background:#fff;border-radius:14px;padding:14px 20px;display:inline-block"><img src="${LOGO}" style="height:54px;display:block"></div></div>
     <div style="text-align:center;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#d9c8ea;margin-top:12px">Painel Público do Governo</div>
-    <h1 style="text-align:center;font-size:30px;font-weight:800;margin:8px 0 4px;color:#fff">Todos por Santa Maria!</h1>
+    <h1 style="text-align:center;font-size:30px;font-weight:800;margin:8px 0 4px;color:#fff">Inovar é Cuidar!</h1>
     <p style="text-align:center;color:#e3d4f2;margin-bottom:24px">Acompanhe o cumprimento do Plano de Governo 2025–2028</p>
     <div style="background:rgba(255,255,255,.1);border-radius:16px;padding:22px;text-align:center;margin-bottom:20px"><div style="font-size:52px;font-weight:800;line-height:1">${cob}%</div><div style="color:#e3d4f2">do Plano de Governo já em execução (${d.promessas_com_projeto} de ${d.promessas_total} diretrizes)</div></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">${pil.map(p=>`<div style="background:rgba(255,255,255,.1);border-radius:14px;padding:16px;text-align:center"><div style="font-size:26px;font-weight:800">${p.com}/${p.total}</div><div style="color:#e3d4f2;font-size:13px;margin-top:4px">${esc(p.pilar)}</div></div>`).join('')}</div>
@@ -1326,48 +1327,67 @@ async function uploadAnexo(pid){
 }
 async function excluirAnexo(id,path){if(!confirm('Excluir este documento?'))return;await gov.storage.from('documentos').remove([path]);await gov.from('anexo').delete().eq('id',id);openFichaProjeto(FICHA_PID);}
 async function gerarApresentacao(){
-  const [prog,org]=await Promise.all([gov.from('programa_ppa').select('valor_previsto'),gov.from('orcamento_orgao').select('valor_fixado')]);
-  const loaTotal=(org.data||[]).reduce((a,b)=>a+Number(b.valor_fixado||0),0);
+  const btn=$('#btnApresentacao');const old=btn?btn.textContent:'';if(btn){btn.textContent='Gerando…';btn.disabled=true;}
+  const [org,prog,pub]=await Promise.all([
+    gov.from('orcamento_orgao').select('valor_fixado'),
+    gov.from('programa_ppa').select('valor_previsto'),
+    gov.rpc('placar_publico')
+  ]);
+  const loaTotal=(org.data||[]).reduce((a,x)=>a+Number(x.valor_fixado||0),0);
   const ppaN=(prog.data||[]).length;
-  const t=computeTermometro();const proj=PROJ;
-  const tot=proj.length,emp=proj.reduce((a,p)=>a+p.emp,0);
-  const benef=proj.reduce((a,p)=>a+(p.beneficiarios||0),0);
-  const secs=new Set(proj.map(p=>p.secretaria?.sigla).filter(Boolean)).size;
-  const hoje=new Date().toLocaleDateString('pt-BR');
-  const byE={};proj.forEach(p=>{const k=p.eixo?.nome||'—';(byE[k]=byE[k]||{cor:p.eixo?.cor||'#64748b',ps:[]}).ps.push(p)});
-  const promTot=PROMS.length,promCom=PROMS.filter(p=>p.st!=='sem_projeto').length;
-  const byPil=['Pessoas','Cidade','Gestão'].map(pl=>{const g=PROMS.filter(x=>x.pilar===pl);return {pl,tot:g.length,com:g.filter(x=>x.st!=='sem_projeto').length};});
-  const kb=(v,l)=>`<div style="background:#f0e9f6;border-radius:12px;padding:16px 18px"><div style="font-size:29px;font-weight:800;color:#4e2270;line-height:1">${v}</div><div style="font-size:12px;color:#5b6472;margin-top:6px;font-weight:600">${l}</div></div>`;
-  const pages=[];
-  pages.push(`<div class="page cover" style="padding:0;display:block;min-height:295mm;position:relative;background:#662d91;overflow:hidden">
-    <div style="position:absolute;top:-60mm;right:-55mm;width:150mm;height:150mm;border-radius:50%;background:#7a3ea8;opacity:.55"></div>
-    <div style="position:relative;padding:40mm 24mm 0;color:#fff">
-      <div style="background:#fff;border-radius:14px;padding:16px 22px;display:inline-block"><img src="${LOGO}" style="height:62px;display:block"></div>
-      <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#d9c8ea;margin:34mm 0 12px">Apresentação do Governo</div>
-      <div style="font-size:44px;font-weight:800;line-height:1.08">Santa Maria<br>em transformação</div>
-      <div style="width:80mm;height:6px;background:#72bf44;margin:20px 0 16px"></div>
-      <div style="font-size:17px;color:#e3d4f2">Gestão Municipal 2025–2028 · Todos por Santa Maria!</div>
-    </div>
-    <div style="position:absolute;bottom:0;left:0;right:0;background:#72bf44;height:16mm"></div>
-    <div style="position:absolute;bottom:21mm;left:24mm;color:#e3d4f2;font-size:12px">Prefeitura Municipal de Santa Maria · ${hoje}</div>
-  </div>`);
-  pages.push(`<div class="page"><h3 class="sec">Uma cidade que avança</h3><p>Santa Maria vive um novo tempo. Com planejamento, transparência e trabalho, transformamos prioridades em entregas concretas para as pessoas. Esta apresentação reúne, de forma simples e direta, o que o Governo está realizando — do cuidado com as pessoas à modernização da cidade e da gestão.</p><p>Cada número aqui representa uma decisão tomada com responsabilidade e com um único propósito: melhorar a vida de quem vive em Santa Maria, hoje e no futuro.</p><div class="pfoot"><span>Apresentação do Governo · Santa Maria</span><span>${hoje}</span></div></div>`);
-  pages.push(`<div class="page"><h3 class="sec">Santa Maria em números</h3><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px">${kb(tot,'Projetos de governo')}${kb(brlM(emp),'Investimento em andamento')}${kb(brlM(loaTotal),'Orçamento 2026 (LOA)')}${kb(ppaN,'Programas do PPA')}${kb(secs,'Secretarias mobilizadas')}${kb(benef.toLocaleString('pt-BR'),'Beneficiários diretos')}</div><h4 style="margin-top:22px">Índice geral de governo: <b style="color:#4e2270">${t.overall}/100</b></h4><div class="pfoot"><span>Apresentação do Governo · Santa Maria</span><span>${hoje}</span></div></div>`);
-  pages.push(`<div class="page"><h3 class="sec">As frentes do Governo</h3><p>As ações estão organizadas em eixos que cobrem as principais áreas da cidade.</p>${Object.entries(byE).map(([n,o])=>`<div style="display:flex;align-items:center;gap:12px;margin:11px 0"><div style="width:14px;height:44px;border-radius:5px;background:${o.cor}"></div><div style="flex:1"><div style="font-weight:700;color:#12213c;font-size:14px">${esc(n)}</div><div style="font-size:12px;color:#64748b">${o.ps.length} projeto(s) · ${brlM(o.ps.reduce((a,p)=>a+p.orc,0))}</div></div></div>`).join('')}<div class="pfoot"><span>Apresentação do Governo · Santa Maria</span><span>${hoje}</span></div></div>`);
-  const dest=proj.filter(p=>p.status==='concluido'||p.prioridade==='P1').slice(0,8);
-  pages.push(`<div class="page"><h3 class="sec">Entregas e frentes prioritárias</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${dest.map(p=>`<div style="border:1px solid #e5e9f0;border-radius:10px;padding:12px 14px;border-left:5px solid ${CR[p.status]}"><div style="font-size:13px;font-weight:700;color:#12213c">${esc(p.nome)}</div><div style="font-size:11.5px;color:#64748b;margin-top:4px">${p.secretaria?.sigla||''} · ${SL[p.status]} · ${p.progresso_fisico}%</div></div>`).join('')}</div><div class="pfoot"><span>Apresentação do Governo · Santa Maria</span><span>${hoje}</span></div></div>`);
-  pages.push(`<div class="page"><h3 class="sec">Compromisso com o Plano de Governo</h3><p>Das 45 diretrizes do plano "Todos por Santa Maria!", <b>${promCom}</b> já contam com projeto em andamento (${promTot?Math.round(promCom/promTot*100):0}% de cobertura).</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px">${byPil.map(b=>`<div style="background:#f0e9f6;border-radius:12px;padding:16px;text-align:center"><div style="font-size:26px;font-weight:800;color:#4e2270">${b.com}/${b.tot}</div><div style="font-size:12px;color:#5b6472;font-weight:600;margin-top:5px">${b.pl}</div></div>`).join('')}</div><div class="pfoot"><span>Apresentação do Governo · Santa Maria</span><span>${hoje}</span></div></div>`);
-  pages.push(`<div class="page cover" style="padding:0;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:295mm;background:#662d91;color:#fff;text-align:center">
-    <div style="background:#fff;border-radius:14px;padding:16px 24px;margin-bottom:26px"><img src="${LOGO}" style="height:60px;display:block"></div>
-    <div style="font-size:34px;font-weight:800">Todos por Santa Maria!</div>
-    <div style="width:70mm;height:6px;background:#72bf44;margin:20px 0"></div>
-    <div style="font-size:15px;color:#e3d4f2;max-width:120mm">Governo de Santa Maria · Gestão 2025–2028 · Inovar é Cuidar</div>
-  </div>`);
-  $('#bookContent').innerHTML=pages.join('');
-  $('#livroOverlay').classList.add('on');window.scrollTo(0,0);
+  const P=(pub&&pub.data)||{};
+  const pil=P.por_pilar||[], metas=(P.metas||[]).slice(0,6);
+  const t=computeTermometro(),tl=termLabel(t.overall);
+  const proj=PROJ,tot=proj.length,emp=proj.reduce((a,p)=>a+(p.emp||0),0),benef=proj.reduce((a,p)=>a+(p.beneficiarios||0),0);
+  const conc=proj.filter(p=>p.status==='concluido').length;
+  const secsN=new Set(proj.map(p=>p.secretaria?.sigla).filter(Boolean)).size;
+  const promT=P.promessas_total||0,promC=P.promessas_com_projeto||0,cob=promT?Math.round(promC/promT*100):0;
+  const brl=n=>'R$ '+(Number(n||0)/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi';
+  const num=n=>Number(n||0).toLocaleString('pt-BR');
+  const L=251.3,val=Math.max(0,t.overall/100*L);
+  const head=tt=>`<div class="s-head"><h2>${tt}</h2><img src="${LOGO}"></div>`;
+  const foot=n=>`<div class="s-foot"><span>Inovar é Cuidar · Prefeitura Municipal de Santa Maria</span><span>${n}</span></div>`;
+  const gauge=`<svg viewBox="0 0 200 118" width="250" height="148"><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="#eef1f6" stroke-width="16" stroke-linecap="round"/><path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="${tl.c}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${val} 1000"/><text x="100" y="88" text-anchor="middle" font-size="46" font-weight="800" fill="${tl.c}">${t.overall}</text></svg>`;
+  const dimsHtml=t.dims.map(d=>{const c=termLabel(d.s).c;return `<div style="display:flex;align-items:center;gap:16px;margin:12px 0"><div style="flex:1;font-size:16px;font-weight:600">${d.n}<span style="display:block;font-size:12px;color:#94a3b8;font-weight:400">peso ${Math.round(d.w*100)}%</span></div><div style="flex:1.4;max-width:120mm;height:11px;background:#eef1f6;border-radius:6px;overflow:hidden"><i style="display:block;height:100%;width:${d.s}%;background:${c};border-radius:6px"></i></div><div style="width:46px;text-align:right;font-size:24px;font-weight:800;color:${c}">${d.s}</div></div>`}).join('');
+  const kpi=(v,l)=>`<div style="background:#faf7fd;border:1px solid #efe7f7;border-radius:16px;padding:24px 18px;text-align:center"><div style="font-size:38px;font-weight:800;color:#4e2270;line-height:1">${v}</div><div style="font-size:14px;color:#64748b;margin-top:8px">${l}</div></div>`;
+  const pilCard=p=>`<div style="background:#f0e9f6;border-radius:16px;padding:22px;text-align:center"><div style="font-size:34px;font-weight:800;color:#4e2270">${p.com}/${p.total}</div><div style="font-size:15px;color:#5a3e7e;margin-top:4px;font-weight:600">${esc(p.pilar)}</div><div style="font-size:12px;color:#8a76ad;margin-top:2px">diretrizes com projeto</div></div>`;
+  const metaBar=m=>{const pct=m.pct||0;const c=pct>=80?'#1d9e75':pct>=50?'#d9932a':'#d64545';return `<div style="margin:12px 0"><div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px"><span style="font-weight:600">${esc(m.indicador)}</span><span style="font-weight:800;color:${c}">${pct}%</span></div><div style="height:11px;background:#eef1f6;border-radius:6px;overflow:hidden"><i style="display:block;height:100%;width:${pct}%;background:${c};border-radius:6px"></i></div><div style="font-size:11px;color:#94a3b8;margin-top:3px">atual ${num(m.atual)} · meta ${num(m.alvo)} ${esc(m.unidade||'')} até ${m.prazo}</div></div>`};
+  const secTiles=(SECS_TERM||[]).filter(s=>s.indice!=null).sort((x,y)=>y.indice-x.indice).map(s=>{const c=secColor(s.indice);return `<div style="background:${secTint(s.indice)};border:1px solid ${c}55;border-radius:12px;padding:14px 12px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;font-weight:800;color:#26364f">${esc(s.sigla)}</span><span style="font-size:26px;font-weight:800;color:${c}">${s.indice}</span></div><div style="height:6px;background:#fff;border-radius:4px;overflow:hidden;margin-top:8px"><i style="display:block;height:100%;width:${s.indice}%;background:${c}"></i></div></div>`}).join('');
+  const semN=(SECS_TERM||[]).filter(s=>s.indice==null).length;
+
+  const slides=[];
+  slides.push(`<section class="slide cover"><div style="background:#fff;border-radius:16px;padding:16px 28px;margin-bottom:28px"><img src="${LOGO}" style="height:64px;display:block"></div><div style="font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#e6d8f4;font-weight:700">Governo Municipal de Santa Maria</div><h1 style="font-size:62px;font-weight:800;margin:8px 0">Inovar é Cuidar</h1><div style="width:88mm;height:7px;background:#72bf44;margin:6px 0 16px"></div><div style="font-size:18px;color:#e3d4f2">Gestão 2025–2028 · Apresentação da gestão</div></section>`);
+
+  slides.push(`<section class="slide">${head('Termômetro do Governo')}<div style="display:flex;gap:30px;align-items:center;flex:1"><div style="text-align:center;min-width:66mm">${gauge}<div style="font-size:14px;color:#8a76ad;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-top:-6px">Índice geral · ${tl.l}</div></div><div style="flex:1">${dimsHtml}</div></div>${foot(2)}</section>`);
+
+  slides.push(`<section class="slide">${head('A gestão em números')}<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:8px">${kpi(tot,'Projetos de governo')}${kpi(brl(emp),'Investido (empenhado)')}${kpi(num(benef),'Beneficiários')}${kpi(secsN,'Secretarias atuantes')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px">${kpi(conc,'Projetos concluídos')}${kpi(brl(loaTotal),'Orçamento (LOA 2026)')}${kpi(ppaN,'Programas no PPA')}</div>${foot(3)}</section>`);
+
+  slides.push(`<section class="slide">${head('Plano de Governo · Inovar é Cuidar')}<div style="display:flex;gap:30px;align-items:center;flex:1"><div style="text-align:center;min-width:70mm"><div style="font-size:88px;font-weight:800;color:#72bf44;line-height:1">${cob}%</div><div style="font-size:16px;color:#5f5e5a;max-width:60mm;margin-top:6px">do Plano de Governo já em execução</div><div style="font-size:13px;color:#94a3b8;margin-top:4px">${promC} de ${promT} diretrizes</div></div><div style="flex:1;display:grid;grid-template-columns:repeat(${Math.max(1,pil.length)},1fr);gap:16px">${pil.map(pilCard).join('')||'<div style=\"color:#94a3b8\">Sem dados de pilares.</div>'}</div></div>${foot(4)}</section>`);
+
+  if(metas.length) slides.push(`<section class="slide">${head('Metas do Plano')}<div style="flex:1;columns:2;column-gap:34px">${metas.map(metaBar).join('')}</div>${foot(5)}</section>`);
+
+  slides.push(`<section class="slide">${head('Desempenho das Secretarias')}<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:6px">${secTiles}</div>${semN?`<div style=\"margin-top:14px;font-size:12px;color:#94a3b8\">+ ${semN} secretarias ainda sem projeto cadastrado.</div>`:''}${foot(6)}</section>`);
+
+  slides.push(`<section class="slide end"><div style="background:#fff;border-radius:16px;padding:16px 28px;margin-bottom:26px"><img src="${LOGO}" style="height:60px;display:block"></div><div style="font-size:52px;font-weight:800">Inovar é Cuidar</div><div style="width:80mm;height:7px;background:#72bf44;margin:18px 0"></div><div style="font-size:16px;color:#e3d4f2;max-width:150mm">Prefeitura Municipal de Santa Maria · Gestão 2025–2028<br>Documento gerado pela plataforma de Governança</div></section>`);
+
+  const css=`@page{size:A4 landscape;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Figtree','Segoe UI',Arial,sans-serif;color:#26364f;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .slide{width:297mm;height:210mm;padding:16mm 20mm;position:relative;page-break-after:always;overflow:hidden;display:flex;flex-direction:column}
+  .slide:last-child{page-break-after:auto}
+  .slide.cover,.slide.end{background:#4e2270;color:#fff;align-items:center;justify-content:center;text-align:center}
+  .s-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #efe7f7;padding-bottom:12px;margin-bottom:20px}
+  .s-head h2{font-size:28px;color:#4e2270;font-weight:800}.s-head img{height:32px}
+  .s-foot{position:absolute;left:20mm;right:20mm;bottom:11mm;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;border-top:1px solid #eef1f6;padding-top:8px}
+  h1{font-weight:800}
+  @media screen{body{background:#e9edf2;padding:16px}.slide{margin:0 auto 16px;box-shadow:0 6px 24px rgba(0,0,0,.16)}.noprint{position:fixed;top:12px;right:16px}}
+  @media print{.noprint{display:none}}`;
+  const w=window.open('','_blank');
+  if(!w){toast('Permita pop-ups para gerar a apresentação.');if(btn){btn.textContent=old;btn.disabled=false;}return;}
+  w.document.write('<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><title>Apresentação do Governo — Inovar é Cuidar</title><style>'+css+'</style></head><body><div class="noprint"><button onclick="window.print()" style="background:#4e2270;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;cursor:pointer">Salvar PDF</button></div>'+slides.join('')+'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print()},500)}</scr'+'ipt></body></html>');
+  w.document.close();
+  if(btn){btn.textContent=old;btn.disabled=false;}
 }
 async function gerarLivro(){
-  const btn=$('#btnGerarLivro');const old=btn.textContent;btn.textContent='Gerando…';btn.disabled=true;
+  const btn=$('#btnLivroRel')||$('#btnGerarLivro');const old=btn?btn.textContent:'';if(btn){btn.textContent='Gerando…';btn.disabled=true;}
   const [prog,org,prm,mtp]=await Promise.all([gov.from('programa_ppa').select('valor_previsto'),gov.from('orcamento_orgao').select('valor_fixado'),gov.from('promessa').select('pilar,promessa_projeto(projeto:projeto_id(status))'),gov.from('meta_plano').select('indicador,unidade,valor_alvo,valor_atual,prazo_ano')]);
   const proms2=(prm.data||[]).map(p=>{const l=(p.promessa_projeto||[]).map(x=>x.projeto).filter(Boolean);let st='sem';if(l.length)st=l.every(x=>x.status==='concluido')?'ent':'exec';return {pilar:p.pilar,st};});
   const pTot=proms2.length,pCom=proms2.filter(x=>x.st!=='sem').length,cobPlano=pTot?Math.round(pCom/pTot*100):0;
@@ -1396,7 +1416,7 @@ async function gerarLivro(){
     </div>
     <div style="position:absolute;bottom:0;left:0;right:0;background:#662d91;color:#fff;padding:11mm 22mm">
       <div style="font-size:13px;font-weight:700;letter-spacing:1px">PREFEITURA MUNICIPAL DE SANTA MARIA</div>
-      <div style="font-size:11px;color:#e3d4f2;margin-top:3px">Todos por Santa Maria! · 2025–2028</div>
+      <div style="font-size:11px;color:#e3d4f2;margin-top:3px">Inovar é Cuidar! · 2025–2028</div>
     </div>
   </div>`);
   pages.push(`<div class="page"><h3 class="sec">1. Objetivo</h3><p>A Plataforma de Governança da Prefeitura Municipal de Santa Maria tem como objetivo dar transparência, previsibilidade e ritmo à execução das prioridades de governo. Este Livro do Governo consolida, em um único documento e de forma automática, o retrato atualizado da gestão — as pautas priorizadas pelo Gabinete, os projetos conduzidos por cada Secretaria, os recursos orçamentários vinculados e os impactos esperados para a população de Santa Maria.</p>
@@ -1408,7 +1428,7 @@ async function gerarLivro(){
   pages.push(`<div class="page"><h3 class="sec">4. Mapa do Governo</h3><p>Distribuição dos projetos prioritários por eixo de governo, com a cor indicando o status de execução (verde: no prazo; âmbar: em atenção; vermelho: crítico; roxo: não iniciado).</p>
   ${Object.entries(byE).map(([n,o])=>`<div class="eixogrp"><div class="eh" style="border-color:${o.cor}">${esc(n)} — ${o.ps.length} projeto(s)</div><div class="chips2">${o.ps.map(p=>`<span class="chip2" style="background:${CR[p.status]}">${esc(p.nome)} · ${p.progresso_fisico}%</span>`).join('')}</div></div>`).join('')}${foot(4)}</div>`);
   pages.push(`<div class="page"><h3 class="sec">5. Cumprimento do Plano de Governo</h3>
-  <p>Conciliação entre as 45 diretrizes do Plano de Governo "Todos por Santa Maria!" (2025–2028) e os projetos em execução. Cobertura atual: <b>${cobPlano}%</b> das promessas já contam com projeto vinculado.</p>
+  <p>Conciliação entre as 45 diretrizes do Plano de Governo "Inovar é Cuidar!" (2025–2028) e os projetos em execução. Cobertura atual: <b>${cobPlano}%</b> das promessas já contam com projeto vinculado.</p>
   <div class="kgrid">${byPil.map(b=>`<div class="kbox"><div class="v">${b.com}/${b.tot}</div><div class="l">${esc(b.pl)} — com projeto</div></div>`).join('')}</div>
   <h4>Metas quantitativas do plano</h4>
   <table class="btable"><thead><tr><th>Indicador</th><th style="text-align:right">Atual</th><th style="text-align:right">Meta</th><th style="text-align:right">%</th><th style="text-align:right">Prazo</th></tr></thead><tbody>${metasArr.map(m=>{const pct=m.valor_alvo?Math.min(100,Math.round(m.valor_atual/m.valor_alvo*100)):0;return `<tr><td>${esc(m.indicador)}</td><td style="text-align:right">${fmtNum(m.valor_atual)} ${esc(m.unidade||'')}</td><td style="text-align:right">${fmtNum(m.valor_alvo)}</td><td style="text-align:right">${pct}%</td><td style="text-align:right">${m.prazo_ano}</td></tr>`}).join('')}</tbody></table>${foot(5)}</div>`);
@@ -1427,7 +1447,7 @@ async function gerarLivro(){
   <div style="margin-top:34mm;text-align:center"><div style="border-top:1px solid #1c2431;width:72mm;margin:0 auto;padding-top:6px;font-weight:600">Prefeitura Municipal de Santa Maria</div></div>${foot(pg++)}</div>`);
   $('#bookContent').innerHTML=pages.join('');
   $('#livroOverlay').classList.add('on');window.scrollTo(0,0);
-  btn.textContent=old;btn.disabled=false;
+  if(btn){btn.textContent=old;btn.disabled=false;}
 }
 $('#btnGerarLivro')&&$('#btnGerarLivro').addEventListener('click',gerarLivro);
 $('#btnFecharLivro').addEventListener('click',()=>$('#livroOverlay').classList.remove('on'));
