@@ -11,8 +11,16 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--tin);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .hide{display:none!important}
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#4e2270,#662d91)}
-.login-card{background:#fff;border-radius:16px;padding:34px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.login-wrap{min-height:100vh;display:grid;grid-template-columns:1.15fr .85fr;background:#fff}
+.login-hero{position:relative;background:#4e2270 url('img/sm4.jpg') center/cover no-repeat}
+.login-hero .ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(78,34,112,.28) 0%,rgba(78,34,112,.55) 55%,rgba(46,18,66,.88) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:52px 48px}
+.login-hero .kick{font-size:12.5px;letter-spacing:3px;text-transform:uppercase;color:#e3d4f2;font-weight:700;margin-bottom:14px}
+.login-hero h2{font-size:34px;font-weight:800;color:#fff;line-height:1.12;margin-bottom:12px;max-width:460px}
+.login-hero p{font-size:15px;color:#efe9f6;max-width:430px;line-height:1.5}
+.login-hero .gbar{height:6px;width:90px;background:#72bf44;border-radius:4px;margin-top:22px}
+.login-panel{display:flex;align-items:center;justify-content:center;padding:26px}
+.login-card{background:#fff;border-radius:16px;padding:34px 32px;width:100%;max-width:390px}
+@media(max-width:820px){.login-wrap{grid-template-columns:1fr}.login-hero{min-height:210px}.login-hero .ov{padding:26px}.login-hero h2{font-size:24px}}
 .login-card .mk{width:52px;height:52px;border-radius:12px;background:var(--azul-esc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;margin-bottom:16px}
 .login-card h1{font-size:20px;color:#0f2544;font-weight:700}.login-card p{font-size:13px;color:var(--tsec);margin-bottom:22px}
 .fld{margin-bottom:14px}.fld label{font-size:12px;font-weight:600;color:#3a4a63;display:block;margin-bottom:5px}
@@ -39,6 +47,10 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .scope{background:var(--roxo-cl);border:1px solid #d9d5f5;border-radius:10px;padding:10px 15px;margin-bottom:18px;font-size:13px;color:#3a327a}
 .view{display:none}.view.on{display:block}
 .ph{margin-bottom:16px}.ph h2{font-size:20px;font-weight:700;color:#0f2544}.ph p{font-size:13px;color:var(--tsec)}
+.phero{position:relative;border-radius:14px;overflow:hidden;margin-bottom:18px;background:#4e2270 url('img/sm1.jpg') center 32%/cover no-repeat;min-height:120px;display:flex;align-items:flex-end}
+.phero .ov{width:100%;background:linear-gradient(90deg,rgba(78,34,112,.92) 0%,rgba(102,45,145,.60) 62%,rgba(102,45,145,.22) 100%);padding:24px 26px}
+.phero h2{color:#fff;font-size:23px;font-weight:800;margin:0}
+.phero p{color:#e9dff3;font-size:13px;margin-top:3px}
 .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:20px}
 .kpi{background:#fff;border:1px solid var(--linha);border-radius:var(--radius);padding:14px 15px;box-shadow:var(--sombra)}
 .kpi .k-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -153,6 +165,15 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 <body>
 
 <div id="login" class="login-wrap">
+  <div class="login-hero">
+    <div class="ov">
+      <div class="kick">Prefeitura de Santa Maria</div>
+      <h2>Governança da Gestão, em um só lugar</h2>
+      <p>Pautas de governo, projetos, orçamento, cumprimento do plano e resultados — para o Prefeito e cada Secretaria.</p>
+      <div class="gbar"></div>
+    </div>
+  </div>
+  <div class="login-panel">
   <div class="login-card">
     <img src="logo.png" alt="Prefeitura de Santa Maria" style="height:56px;margin-bottom:16px">
     <h1>Governança SM</h1>
@@ -163,6 +184,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       <button class="btn block" type="submit" id="btnLogin">Entrar</button>
     </form>
     <div id="loginMsg"></div>
+  </div>
   </div>
 </div>
 
@@ -191,7 +213,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       <div class="scope" id="scope"></div>
 
       <section class="view on" id="v-painel">
-        <div class="ph"><h2 id="painelTit">Painel do Prefeito</h2><p id="painelSub">Visão consolidada da gestão</p></div>
+        <div class="phero"><div class="ov"><h2 id="painelTit">Painel do Prefeito</h2><p id="painelSub">Visão consolidada da gestão</p></div></div>
         <div id="termometro"></div>
         <div class="livro-cta" id="livroCta"><button class="btn" id="btnGerarLivro">▤ Gerar Livro do Governo (PDF)</button></div>
         <div id="radar"></div>
