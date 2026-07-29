@@ -367,6 +367,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       <a data-v="projetos">Projetos</a>
       <div class="navgrp" id="navGrpRel">Relatórios</div>
       <a data-v="relatorios" id="navRel">Relatórios e fichas</a>
+      <a data-v="tce" id="navTce">Prestação de Contas (TCE)</a>
       <a data-v="secretarias" id="navSec">Secretarias</a>
       <a data-v="auditoria" id="navAud">Auditoria</a>
     </nav>
@@ -456,6 +457,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
             <select id="pjSecretaria"></select>
             <select id="pjNatureza"><option value="">Natureza do objeto…</option><option value="obra">Obra</option><option value="servico">Serviço</option><option value="compra">Compra / Aquisição</option><option value="programa">Programa</option><option value="outro">Outro</option></select>
             <select id="pjEixo"></select>
+            <select id="pjPrograma"></select>
             <select id="pjPrioridade"><option value="">Prioridade</option><option>P1</option><option>P2</option><option>P3</option></select>
             <div class="form-sec">Liderança e equipe</div>
             <select id="pjLider"><option value="">Líder do projeto…</option></select>
@@ -490,6 +492,8 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
         <div class="ph"><h2>Secretarias</h2><p>Órgãos e orçamento fixado (LOA 2026).</p></div>
         <div class="panel"><div class="p-body" id="listaSecretarias"><div class="loading">Carregando…</div></div></div>
       </section>
+
+      <section class="view" id="v-tce"><div class="ph"><h2>Prestação de Contas — TCE-RS</h2><p>Convergência da plataforma com a RDI nº 817716 (Auditoria 848/2026) — gestão do PPA: monitoramento, avaliação e revisão. A MarIA redige a metodologia, as minutas e os rascunhos de resposta.</p></div><div id="tceBody"><div class="loading">Carregando…</div></div></section>
 
       <section class="view" id="v-relatorios">
         <div class="ph"><h2>Relatórios</h2><p>Documentos e fichas executivas do Governo.</p></div>
@@ -645,7 +649,7 @@ async function loadMe(){
   renderId();showApp();
   await loadProjetos();await loadEixos();
   renderPainel();renderMapa();renderGantt();if(!isGlobal())loadTermometroGeral();if(isGlobal())loadTermometroSecretarias();
-  loadPautas();loadPlano();loadDemandas();renderProjetos();loadSecretarias();loadRelatorios();prepForm();prepProjForm();loadAlertas();loadAuditoria();loadNotif();setTimeout(()=>loadTermHistorico(),1800);
+  loadPautas();loadPlano();loadDemandas();renderProjetos();loadSecretarias();loadRelatorios();if(isGlobal())renderTCE();prepForm();prepProjForm();loadAlertas();loadAuditoria();loadNotif();setTimeout(()=>loadTermHistorico(),1800);
 }
 function renderId(){
   const ini=ME.nome.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -653,7 +657,7 @@ function renderId(){
   $('#uRl').textContent=ME.papel==='prefeito'?'Prefeito — vê tudo':ME.papel==='governanca'?'Governança — vê tudo':('Secretário · '+(ME.secretaria?.sigla||''));
   if(isGlobal()){$('#scope').innerHTML='Você tem <b>visão global</b> — todas as secretarias.';$('#painelTit').textContent='Painel do Prefeito';$('#fabMaria')&&$('#fabMaria').classList.add('on');if($('#termometroGeral'))$('#termometroGeral').style.display='none';}
   else{$('#scope').innerHTML='Ambiente da <b>'+(ME.secretaria?.nome||'sua secretaria')+'</b> — você vê apenas a sua pasta.';$('#painelTit').textContent='Meu Painel';$('#navSec').classList.add('hide');var qv=s=>document.querySelector(s);if(qv('[data-v="pautas"]'))qv('[data-v="pautas"]').textContent='Minhas Pautas';if(qv('[data-v="mapa"]'))qv('[data-v="mapa"]').textContent='Mapa da Gestão';if(qv('[data-v="demandas"]'))qv('[data-v="demandas"]').textContent='Demandas a Executar';if(qv('[data-v="projetos"]'))qv('[data-v="projetos"]').textContent='Projetos a Executar';if($('#navGrpPessoal'))$('#navGrpPessoal').textContent='Minha área pessoal';if($('#pautasTit'))$('#pautasTit').textContent='Minhas Pautas Pessoais';if($('#pautasSub'))$('#pautasSub').textContent='Seu quadro pessoal de assuntos da pasta — só você vê e organiza aqui.';if($('#mapaTit'))$('#mapaTit').textContent='Mapa da Gestão';if($('#termoSecs'))$('#termoSecs').style.display='none';if($('#demTit'))$('#demTit').textContent='Demandas a Executar';if($('#demSub'))$('#demSub').innerHTML='Demandas que a Governança direciona à sua pasta para executar (podem fazer parte de um projeto de outra secretaria). Abaixo você também registra as demandas da sua Secretaria para o Prefeito acompanhar.';}
-  $('#navRel').style.display=isGlobal()?'':'none';const gr=$('#navGrpRel');if(gr)gr.style.display=isGlobal()?'':'none';
+  $('#navRel').style.display=isGlobal()?'':'none';var _nt=$('#navTce');if(_nt)_nt.style.display=isGlobal()?'':'none';const gr=$('#navGrpRel');if(gr)gr.style.display=isGlobal()?'':'none';
   $('#navAud').style.display=isGlobal()?'':'none';
 }
 async function loadProjetos(){
@@ -1056,7 +1060,7 @@ async function prepProjForm(){
     gov.from('promessa').select('id,codigo,titulo').order('codigo')
   ]);
   PJ.secs=se.data||[];PJ.proms=pr.data||[];
-  $('#pjEixo').innerHTML='<option value="">Eixo de governo…</option>'+(ei.data||[]).map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join('');
+  $('#pjEixo').innerHTML='<option value="">Eixo de governo…</option>'+(ei.data||[]).map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join('');gov.from('programa_ppa').select('id,codigo,nome').order('codigo').then(({data})=>{if($('#pjPrograma'))$('#pjPrograma').innerHTML='<option value="">Programa do PPA (vincula ao PPA)…</option>'+(data||[]).map(p=>`<option value="${p.id}">${p.codigo?esc(p.codigo)+' · ':''}${esc(p.nome)}</option>`).join('');});
   const secSel=$('#pjSecretaria');
   if(isGlobal()){secSel.innerHTML='<option value="">Secretaria responsável…</option>'+PJ.secs.map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join('');secSel.disabled=false;secSel.onchange=()=>onProjSec(secSel.value);}
   else{secSel.innerHTML=`<option value="${ME.secretaria_id}">${esc(ME.secretaria?.nome||'Minha secretaria')}</option>`;secSel.disabled=true;onProjSec(ME.secretaria_id);}
@@ -1089,7 +1093,7 @@ function renderPJchips(){
 async function submitProjeto(){
   const nome=$('#pjNome').value.trim();if(!nome){toast('Informe o nome do projeto.');return;}
   const secretaria_id=isGlobal()?$('#pjSecretaria').value:ME.secretaria_id;if(!secretaria_id){toast('Selecione a secretaria responsável.');return;}
-  const rec={nome,descricao:$('#pjDesc').value.trim()||null,secretaria_id,natureza:$('#pjNatureza').value||null,eixo_id:$('#pjEixo').value||null,prioridade:$('#pjPrioridade').value||null,lider_id:$('#pjLider').value||null,fase:$('#pjFase').value||'planejamento',status:'nao_iniciado',data_inicio:$('#pjInicio').value||null,data_fim_prevista:$('#pjFim').value||null};
+  const rec={nome,descricao:$('#pjDesc').value.trim()||null,secretaria_id,natureza:$('#pjNatureza').value||null,eixo_id:$('#pjEixo').value||null,programa_id:$('#pjPrograma').value||null,prioridade:$('#pjPrioridade').value||null,lider_id:$('#pjLider').value||null,fase:$('#pjFase').value||'planejamento',status:'nao_iniciado',data_inicio:$('#pjInicio').value||null,data_fim_prevista:$('#pjFim').value||null};
   const {data,error}=await gov.from('projeto').insert(rec).select('id,codigo').single();
   if(error){toast('Não foi possível cadastrar: '+error.message);return;}
   const pid=data.id;const T=[];if(PENDING_DEM){T.push(gov.from('demanda').update({projeto_id:pid,status:'em_execucao'}).eq('id',PENDING_DEM));}
@@ -1326,6 +1330,32 @@ async function uploadAnexo(pid){
   openFichaProjeto(pid);
 }
 async function excluirAnexo(id,path){if(!confirm('Excluir este documento?'))return;await gov.storage.from('documentos').remove([path]);await gov.from('anexo').delete().eq('id',id);openFichaProjeto(FICHA_PID);}
+function mariaTCE(tarefa,instr){AI_MODE='governo';AI_CTX=govContexto();$('#aiSub').textContent='Prestação de contas · TCE';setAiChips('governo');$('#aiInstr').value=instr||'';$('#aiCopy').style.display='none';if($('#aiPdf'))$('#aiPdf').style.display='none';$('#aiOv').classList.add('on');runAI(tarefa);}
+function renderTCE(){
+  const el=$('#tceBody');if(!el)return;
+  const CH={atende:['Atende','#eaf3de','#3b6d11'],parcial:['Parcial','#faeeda','#854f0b'],doc:['Documental','#f1efe8','#5f5e5a']};
+  const IT=[
+   [1,'Decretos de estrutura e competências','doc','Documentos jurídicos das secretarias (Governança, Planejamento, Fazenda, Transparência/Controle, Controle Interno). A plataforma pode arquivá-los como anexos.',[]],
+   [2,'Metodologia/manual de monitoramento, avaliação e revisão','parcial','A plataforma operacionaliza a metodologia; a MarIA redige o manual oficial descrevendo o fluxo.',[['tce_metodologia','Redigir metodologia (MarIA)','']]],
+   [3,'Arranjos institucionais (comitês/núcleos)','parcial','A plataforma dá o arranjo operacional (Governança + secretarias); falta o ato formal instituindo o comitê.',[['tce_comite','Minutar ato do comitê (MarIA)','']]],
+   [4,'Articulação planejamento central × áreas setoriais','parcial','As demandas (mão dupla) articulam central × setorial; documentado na metodologia.',[['tce_metodologia','Redigir metodologia (MarIA)','']]],
+   [5,'Evidências de monitoramento e avaliação (2025–2026)','atende','Trilha de auditoria, histórico de projetos/demandas e leituras do termômetro são evidências datadas.',[]],
+   [6,'Como é feito o monitoramento','atende','A plataforma é o sistema de monitoramento: execução física/financeira, sinais de desvio, periodicidade (leituras), servidores e interação com as secretarias.',[]],
+   [7,'Como é feita a avaliação dos programas finalísticos','atende','A MarIA faz a análise crítica e a plataforma concilia plano × execução.',[]],
+   [8,'Link público de controle social','atende','O Painel Público do Governo já cumpre isso — acesso sem login, com plano, metas e projetos.',[['__placar','Abrir Painel Público','']]],
+   [9,'Análise e controle de custos','parcial','Execução orçamentária por projeto/programa/secretaria (orçado, empenhado, liquidado, pago).',[]],
+   [10,'Relação de capacitações','doc','Registro administrativo — pode ser cadastrado/anexado na plataforma.',[]],
+   [11,'Iniciativas de modernização da gestão do PPA','atende','A própria plataforma, com inteligência artificial, é a iniciativa de modernização.',[]]
+  ];
+  const nA=IT.filter(x=>x[2]==='atende').length,nP=IT.filter(x=>x[2]==='parcial').length,nD=IT.filter(x=>x[2]==='doc').length;
+  let html=`<div class="panel" style="margin-bottom:12px"><div style="padding:14px 16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center"><div style="flex:1;min-width:220px;font-size:13px;color:var(--tsec)">RDI nº 817716 · prazo 07/08/2026. Mapa de convergência dos 11 itens com a plataforma.</div><div style="display:flex;gap:8px"><span class="tag" style="background:#eaf3de;color:#3b6d11">${nA} atende</span><span class="tag" style="background:#faeeda;color:#854f0b">${nP} parcial</span><span class="tag" style="background:#f1efe8;color:#5f5e5a">${nD} documental</span></div></div></div>`;
+  html+=IT.map(([n,t,st,o,bs])=>{
+    const c=CH[st];
+    const btns=(bs.map(([tk,lb])=>tk==='__placar'?`<button class="btn ghost sm" data-placar="1">${lb}</button>`:`<button class="btn ghost sm" data-tce="${tk}">${lb}</button>`).join(''))+`<button class="btn ghost sm" data-tce="tce_resposta" data-instr="Item ${n} da RDI 817716 do TCE-RS: ${esc(t)}">Rascunhar resposta (MarIA)</button>`;
+    return `<div class="panel" style="margin-bottom:10px"><div style="padding:13px 16px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="background:#4e2270;color:#fff;font-weight:800;font-size:12px;width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex:none">${n}</span><div style="flex:1;font-weight:700;font-size:14px;color:#26364f">${esc(t)}</div><span class="tag" style="background:${c[1]};color:${c[2]}">${c[0]}</span></div><div style="font-size:12.5px;color:var(--tsec);margin:0 0 10px 36px">${esc(o)}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:36px">${btns}</div></div></div>`;
+  }).join('');
+  el.innerHTML=html;
+}
 async function gerarApresentacao(){
   const btn=$('#btnApresentacao');const old=btn?btn.textContent:'';if(btn){btn.textContent='Gerando…';btn.disabled=true;}
   const [org,prog,pub]=await Promise.all([
@@ -1454,7 +1484,7 @@ async function gerarLivro(){
 $('#btnGerarLivro')&&$('#btnGerarLivro').addEventListener('click',gerarLivro);
 $('#btnFecharLivro').addEventListener('click',()=>$('#livroOverlay').classList.remove('on'));
 $('#btnImprimir').addEventListener('click',()=>window.print());
-document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));$('#destClose')&&$('#destClose').addEventListener('click',()=>$('#destinoOv').classList.remove('on'));$('#aiTools')&&$('#aiTools').addEventListener('click',e=>{const b=e.target.closest('[data-ai]');if(b)runAI(b.dataset.ai);});$('#fabMaria')&&$('#fabMaria').addEventListener('click',openMariaGoverno);$('#aiPdf')&&$('#aiPdf').addEventListener('click',exportarAvaliacaoPDF);$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(iaPlain(window._aiTxt)).then(()=>toast('Texto copiado.','ok'));});
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));$('#destClose')&&$('#destClose').addEventListener('click',()=>$('#destinoOv').classList.remove('on'));$('#tceBody')&&$('#tceBody').addEventListener('click',e=>{const b=e.target.closest('[data-tce],[data-placar]');if(!b)return;if(b.hasAttribute('data-placar')){openPlacarPublico();return;}mariaTCE(b.dataset.tce,b.dataset.instr||'');});$('#aiTools')&&$('#aiTools').addEventListener('click',e=>{const b=e.target.closest('[data-ai]');if(b)runAI(b.dataset.ai);});$('#fabMaria')&&$('#fabMaria').addEventListener('click',openMariaGoverno);$('#aiPdf')&&$('#aiPdf').addEventListener('click',exportarAvaliacaoPDF);$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(iaPlain(window._aiTxt)).then(()=>toast('Texto copiado.','ok'));});
 $('#btnToggleProj')&&$('#btnToggleProj').addEventListener('click',()=>$('#projFormWrap').classList.toggle('hide'));
 $('#btnCriarProjeto')&&$('#btnCriarProjeto').addEventListener('click',submitProjeto);
 $('#fichaClose')&&$('#fichaClose').addEventListener('click',()=>$('#projFichaOv').classList.remove('on'));
