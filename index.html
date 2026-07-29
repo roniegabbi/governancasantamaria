@@ -181,6 +181,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 .kcard .kc-m{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}
 .kcard .kc-sec{font-size:10.5px;color:var(--tsec);background:#f1f3f7;padding:2px 7px;border-radius:6px}
 .kempty{font-size:11px;color:var(--mut);text-align:center;padding:14px}
+.apoio3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}@media(max-width:640px){.apoio3{grid-template-columns:1fr}}
 .karrow{display:flex;align-items:center;justify-content:center;font-size:26px;color:#c3b0e0;font-weight:800;flex:0 0 auto}
 .form-sec{grid-column:1/3;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#8a76ad;border-bottom:1px solid var(--linha2);padding-bottom:5px;margin-top:8px}
 .lbl-mini{font-size:12px;color:var(--tsec);margin-bottom:6px;font-weight:600}
@@ -437,7 +438,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
             <textarea class="full" id="dDesc" placeholder="Descrição (opcional)"></textarea>
             <select id="dSecretaria"></select>
             <select id="dPrioridade"><option value="">Prioridade</option><option>P1</option><option>P2</option><option>P3</option></select>
-            <div class="full" id="dApoioWrap"><div style="font-size:12px;color:var(--tsec);margin-bottom:6px;font-weight:600">Secretarias apoiadoras — adicione quantas precisar (todas verão a demanda no ambiente delas)</div><select id="dApoioSel"></select><div id="dApoioChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div></div>
+            <div class="full" id="dApoioWrap"><div style="font-size:12px;color:var(--tsec);margin-bottom:6px;font-weight:600">Secretarias apoiadoras (até 3) — todas verão a demanda no ambiente delas</div><div class="apoio3"><select id="dApoio1"></select><select id="dApoio2"></select><select id="dApoio3"></select></div></div>
             <button class="btn full" id="btnCriarDemanda">Registrar demanda</button>
           </div>
         </div>
@@ -827,9 +828,8 @@ async function prepForm(){const sel=$('#dSecretaria');
   SECS=data||[];
   if(isGlobal()){sel.innerHTML='<option value="">Secretaria responsável…</option>'+SECS.map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join('');}
   else{sel.innerHTML=`<option value="${ME.secretaria_id}">${esc(ME.secretaria?.nome||'Minha secretaria')}</option>`;}
-  const ap=$('#dApoioSel'),wrap=$('#dApoioWrap');
-  if(ap){ if(isGlobal()){wrap.style.display='';ap.innerHTML='<option value="">+ adicionar secretaria apoiadora…</option>'+SECS.map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join('');ap.onchange=()=>{const id=ap.value;if(!id)return;const s=SECS.find(x=>x.id===id);if(s&&!apoioSel.find(x=>x.id===id))apoioSel.push(s);ap.value='';renderApoioChips();};} else {wrap.style.display='none';} }
-  renderApoioChips();
+  const wrap=$('#dApoioWrap');
+  if(wrap){ if(isGlobal()){wrap.style.display='';const opts=SECS.map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join('');['dApoio1','dApoio2','dApoio3'].forEach((id,i)=>{const el=$('#'+id);if(el){el.innerHTML='<option value="">Apoiadora '+(i+1)+'…</option>'+opts;el.value='';}});} else {wrap.style.display='none';} }
 }
 function renderApoioChips(){const c=$('#dApoioChips');if(!c)return;c.innerHTML=apoioSel.map(s=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--azul-cl);color:var(--azul-esc);font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:20px">${esc(s.sigla||s.nome)}<span data-rm="${s.id}" style="cursor:pointer;font-weight:800">×</span></span>`).join('');c.querySelectorAll('[data-rm]').forEach(x=>x.addEventListener('click',()=>{apoioSel=apoioSel.filter(a=>a.id!==x.dataset.rm);renderApoioChips();}));}
 $('#btnCriarDemanda').addEventListener('click',async()=>{
@@ -838,10 +838,10 @@ $('#btnCriarDemanda').addEventListener('click',async()=>{
   const direcao=isGlobal()?'governo_para_secretaria':'secretaria_para_prefeito';
   const {data,error}=await gov.from('demanda').insert({titulo,descricao:$('#dDesc').value.trim()||null,direcao,secretaria_id,prioridade:$('#dPrioridade').value||null}).select('id,codigo').single();
   if(error){toast('Não foi possível registrar: '+error.message);return;}
-  const apoios=apoioSel.filter(s=>s.id!==secretaria_id);
-  if(apoios.length){const {error:e2}=await gov.from('demanda_apoio').insert(apoios.map(s=>({demanda_id:data.id,secretaria_id:s.id})));if(e2)toast('Demanda criada, mas erro ao vincular apoiadoras: '+e2.message);}
-  toast('Demanda '+(data.codigo||'')+' registrada.'+(apoios.length?' '+apoios.length+' secretaria(s) apoiadora(s) notificada(s).':''));
-  $('#dTitulo').value='';$('#dDesc').value='';$('#dPrioridade').value='';apoioSel=[];renderApoioChips();loadDemandas();});
+  const apoIds=[...new Set(['dApoio1','dApoio2','dApoio3'].map(id=>(($('#'+id)||{}).value)||'').filter(v=>v&&v!==secretaria_id))];
+  if(apoIds.length){const {error:e2}=await gov.from('demanda_apoio').insert(apoIds.map(id=>({demanda_id:data.id,secretaria_id:id})));if(e2)toast('Demanda criada, mas erro ao vincular apoiadoras: '+e2.message);}
+  toast('Demanda '+(data.codigo||'')+' registrada.'+(apoIds.length?' '+apoIds.length+' secretaria(s) apoiadora(s) notificada(s).':''));
+  $('#dTitulo').value='';$('#dDesc').value='';$('#dPrioridade').value='';['dApoio1','dApoio2','dApoio3'].forEach(id=>{if($('#'+id))$('#'+id).value='';});loadDemandas();});
 function renderProjetos(){
   renderProjetosKanban();
   const el=$('#listaProjetos');if(!PROJ.length){el.innerHTML='<div class="empty">Nenhum projeto visível.</div>';return;}
