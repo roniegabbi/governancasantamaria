@@ -359,6 +359,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
       <a class="on" data-v="painel">Painel</a>
       <a data-v="plano">Plano de Governo</a>
       <a data-v="mapa">Mapa do Governo</a>
+      <a data-v="mapaobras">Mapa de Obras</a>
       <a data-v="gantt">Cronograma</a>
       <div class="navgrp" id="navGrpPessoal">Área pessoal do Prefeito</div>
       <a data-v="pautas">Pautas Pessoais do Prefeito</a>
@@ -426,6 +427,21 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
         <div id="mapaFull"><div class="loading">Carregando…</div></div>
       </section>
 
+      <section class="view" id="v-mapaobras">
+        <div class="ph"><h2>Mapa de Obras</h2><p>As obras da cidade marcadas por status. Clique num ponto para ver a obra e abrir a ficha.</p></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <div id="obrasInfo" style="font-size:12.5px;color:var(--tsec)">Carregando…</div>
+          <div style="display:flex;gap:11px;font-size:11px;font-weight:600;color:#26364f;flex-wrap:wrap">
+            <span style="display:inline-flex;align-items:center;gap:5px"><i style="width:11px;height:11px;border-radius:50%;background:#1d9e75"></i>No prazo</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><i style="width:11px;height:11px;border-radius:50%;background:#d9932a"></i>Em atenção</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><i style="width:11px;height:11px;border-radius:50%;background:#d64545"></i>Crítica</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><i style="width:11px;height:11px;border-radius:50%;background:#2f74c0"></i>Não iniciada</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><i style="width:11px;height:11px;border-radius:50%;background:#0f6e56"></i>Concluída</span>
+          </div>
+        </div>
+        <div id="mapaObras" style="height:560px;border-radius:12px;overflow:hidden;border:1px solid var(--linha);position:relative;z-index:0"></div>
+      </section>
+
       <section class="view" id="v-gantt">
         <div class="ph"><h2>Cronograma de Governo — 2026</h2><p>Linha do tempo dos projetos. A linha vermelha marca hoje.</p></div>
         <div class="panel"><div class="gantt-wrap"><div class="gantt" id="gantt"><div class="loading">Carregando…</div></div></div></div>
@@ -481,7 +497,7 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
             <input id="pjVigFim" type="date" title="Vigência — fim">
             <select id="pjFiscal"><option value="">Fiscal do contrato…</option></select>
             <select id="pjGestor"><option value="">Gestor do contrato…</option></select>
-            <button class="btn full" id="btnCriarProjeto">Cadastrar projeto</button>
+            <div class="full" style="border-top:1px solid var(--linha);padding-top:10px;margin-top:2px"><div style="font-size:12px;color:var(--tsec);margin-bottom:6px;font-weight:600">Localização da obra (para o Mapa de Obras)</div><div class="karrow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><input id="pjEndereco" placeholder="Endereço (ex.: Av. Nossa Senhora Medianeira, 355)" style="flex:1;min-width:220px"><button type="button" class="btn ghost sm" id="pjLocalizar">Localizar no mapa</button></div><div id="pjMiniMap" style="height:220px;border-radius:10px;overflow:hidden;border:1px solid var(--linha);position:relative;z-index:0"></div><div id="pjCoord" style="font-size:11.5px;color:var(--tsec);margin-top:5px">Digite o endereço e clique em “Localizar”, ou clique no mapa para marcar o ponto exato.</div></div><button class="btn full" id="btnCriarProjeto">Cadastrar projeto</button>
           </div>
         </div>
         <div class="panel"><div class="p-head"><h3>Fluxo dos projetos</h3><span class="pill">arraste os cartões entre as fases</span></div><div class="p-body" id="projKanban"></div></div>
@@ -528,6 +544,8 @@ body{font-family:'Figtree',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;back
 </div>
 
 <button class="fab-maria" id="fabMaria" aria-label="MarIA — avaliação do Governo">✨ MarIA</button>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <div id="toasts" class="toasts"></div>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -784,7 +802,7 @@ function renderDestinoChooser(){
 }
 function destinoEscolha(tipo){
   const d=DEST_DEM;if(!d)return;
-  if(tipo==='proj'){PENDING_DEM=d.id;$('#destinoOv').classList.remove('on');go('projetos');const w=$('#projFormWrap');if(w)w.classList.remove('hide');if($('#pjNome'))$('#pjNome').value=d.titulo||'';if($('#pjDesc'))$('#pjDesc').value=d.descricao||'';toast('Preencha o projeto — ao salvar, a demanda '+(d.codigo||'')+' será vinculada.','info');setTimeout(()=>{$('#pjNome')&&$('#pjNome').scrollIntoView({behavior:'smooth',block:'center'});},250);return;}
+  if(tipo==='proj'){PENDING_DEM=d.id;$('#destinoOv').classList.remove('on');go('projetos');const w=$('#projFormWrap');if(w)w.classList.remove('hide');initMiniMap();if($('#pjNome'))$('#pjNome').value=d.titulo||'';if($('#pjDesc'))$('#pjDesc').value=d.descricao||'';toast('Preencha o projeto — ao salvar, a demanda '+(d.codigo||'')+' será vinculada.','info');setTimeout(()=>{$('#pjNome')&&$('#pjNome').scrollIntoView({behavior:'smooth',block:'center'});},250);return;}
   const servs=(PJ.servidores||[]);
   const respOpts='<option value="">Responsável…</option>'+servs.map(s=>`<option value="${s.id}">${esc(s.nome)}${s.eh_secretario?' (Secretário)':''}</option>`).join('');
   const descVal=esc(d.titulo||'')+(d.descricao?(' — '+esc(d.descricao)):'');
@@ -1093,7 +1111,7 @@ function renderPJchips(){
 async function submitProjeto(){
   const nome=$('#pjNome').value.trim();if(!nome){toast('Informe o nome do projeto.');return;}
   const secretaria_id=isGlobal()?$('#pjSecretaria').value:ME.secretaria_id;if(!secretaria_id){toast('Selecione a secretaria responsável.');return;}
-  const rec={nome,descricao:$('#pjDesc').value.trim()||null,secretaria_id,natureza:$('#pjNatureza').value||null,eixo_id:$('#pjEixo').value||null,programa_id:$('#pjPrograma').value||null,prioridade:$('#pjPrioridade').value||null,lider_id:$('#pjLider').value||null,fase:$('#pjFase').value||'planejamento',status:'nao_iniciado',data_inicio:$('#pjInicio').value||null,data_fim_prevista:$('#pjFim').value||null};
+  const rec={nome,descricao:$('#pjDesc').value.trim()||null,secretaria_id,natureza:$('#pjNatureza').value||null,eixo_id:$('#pjEixo').value||null,programa_id:$('#pjPrograma').value||null,prioridade:$('#pjPrioridade').value||null,lider_id:$('#pjLider').value||null,fase:$('#pjFase').value||'planejamento',status:'nao_iniciado',lat:PJ_LAT,lng:PJ_LNG,endereco:(($('#pjEndereco')||{}).value||'').trim()||null,data_inicio:$('#pjInicio').value||null,data_fim_prevista:$('#pjFim').value||null};
   const {data,error}=await gov.from('projeto').insert(rec).select('id,codigo').single();
   if(error){toast('Não foi possível cadastrar: '+error.message);return;}
   const pid=data.id;const T=[];if(PENDING_DEM){T.push(gov.from('demanda').update({projeto_id:pid,status:'em_execucao'}).eq('id',PENDING_DEM));}
@@ -1105,8 +1123,8 @@ async function submitProjeto(){
   if(emp||mod||proc){const vc=parseFloat($('#pjValorC').value);T.push(gov.from('contrato').insert({projeto_id:pid,numero_processo:proc||null,numero_contrato:$('#pjContrato').value.trim()||null,modalidade:mod||null,empresa_nome:emp||null,empresa_cnpj:$('#pjCnpj').value.trim()||null,valor_contratado:vc>0?vc:null,vigencia_inicio:$('#pjVigIni').value||null,vigencia_fim:$('#pjVigFim').value||null,fiscal_id:$('#pjFiscal').value||null,gestor_id:$('#pjGestor').value||null}));}
   const res=await Promise.all(T);const bad=res.find(r=>r&&r.error);
   toast('Projeto '+(data.codigo||'')+' cadastrado.'+(bad?' (atenção: alguns vínculos não foram salvos)':'')+(PENDING_DEM?' Demanda vinculada.':''),'ok');if(PENDING_DEM){PENDING_DEM=null;loadDemandas();}
-  ['pjNome','pjDesc','pjOrc','pjInicio','pjFim','pjProcesso','pjEmpresa','pjCnpj','pjContrato','pjValorC','pjVigIni','pjVigFim'].forEach(i=>$('#'+i).value='');
-  ['pjNatureza','pjEixo','pjPrioridade','pjModalidade','pjFiscal','pjGestor'].forEach(i=>$('#'+i).value='');$('#pjFase').value='planejamento';
+  ['pjNome','pjDesc','pjOrc','pjInicio','pjFim','pjProcesso','pjEmpresa','pjCnpj','pjContrato','pjValorC','pjVigIni','pjVigFim','pjEndereco'].forEach(i=>$('#'+i).value='');
+  ['pjNatureza','pjEixo','pjPrograma','pjPrioridade','pjModalidade','pjFiscal','pjGestor'].forEach(i=>$('#'+i).value='');$('#pjFase').value='planejamento';PJ_LAT=null;PJ_LNG=null;if(MINIMAP&&MINIMARK){MINIMAP.removeLayer(MINIMARK);MINIMARK=null;}if($('#pjCoord'))$('#pjCoord').textContent='Digite o endereço e clique em “Localizar”, ou clique no mapa.';
   PJ.equipe=[];PJ.apoio=[];PJ.prom=[];renderPJchips();
   await loadProjetos();renderProjetos();renderPainel();renderMapa();renderGantt();if(!isGlobal())loadTermometroGeral();if(isGlobal())loadTermometroSecretarias();
   $('#projFormWrap').classList.add('hide');
@@ -1485,7 +1503,7 @@ $('#btnGerarLivro')&&$('#btnGerarLivro').addEventListener('click',gerarLivro);
 $('#btnFecharLivro').addEventListener('click',()=>$('#livroOverlay').classList.remove('on'));
 $('#btnImprimir').addEventListener('click',()=>window.print());
 document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>go(a.dataset.v)));function closeDrawer(){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');}$('#btnMenu')&&$('#btnMenu').addEventListener('click',()=>{const s=document.querySelector('.side');const o=s.classList.toggle('open');$('#navBackdrop').classList.toggle('on',o);});$('#navBackdrop')&&$('#navBackdrop').addEventListener('click',closeDrawer);$('#btnAI')&&$('#btnAI').addEventListener('click',openAI);$('#aiClose')&&$('#aiClose').addEventListener('click',()=>$('#aiOv').classList.remove('on'));$('#destClose')&&$('#destClose').addEventListener('click',()=>$('#destinoOv').classList.remove('on'));$('#tceBody')&&$('#tceBody').addEventListener('click',e=>{const b=e.target.closest('[data-tce],[data-placar]');if(!b)return;if(b.hasAttribute('data-placar')){openPlacarPublico();return;}mariaTCE(b.dataset.tce,b.dataset.instr||'');});$('#aiTools')&&$('#aiTools').addEventListener('click',e=>{const b=e.target.closest('[data-ai]');if(b)runAI(b.dataset.ai);});$('#fabMaria')&&$('#fabMaria').addEventListener('click',openMariaGoverno);$('#aiPdf')&&$('#aiPdf').addEventListener('click',exportarAvaliacaoPDF);$('#aiCopy')&&$('#aiCopy').addEventListener('click',()=>{navigator.clipboard.writeText(iaPlain(window._aiTxt)).then(()=>toast('Texto copiado.','ok'));});
-$('#btnToggleProj')&&$('#btnToggleProj').addEventListener('click',()=>$('#projFormWrap').classList.toggle('hide'));
+$('#btnToggleProj')&&$('#btnToggleProj').addEventListener('click',()=>{$('#projFormWrap').classList.toggle('hide');if(!$('#projFormWrap').classList.contains('hide'))initMiniMap();});$('#pjLocalizar')&&$('#pjLocalizar').addEventListener('click',geocodePj);
 $('#btnCriarProjeto')&&$('#btnCriarProjeto').addEventListener('click',submitProjeto);
 $('#fichaClose')&&$('#fichaClose').addEventListener('click',()=>$('#projFichaOv').classList.remove('on'));
 $('#projFichaOv')&&$('#projFichaOv').addEventListener('click',e=>{if(e.target.id==='projFichaOv')$('#projFichaOv').classList.remove('on');});
@@ -1569,7 +1587,44 @@ function openMariaGoverno(){
 function openAI(){if(!AI_CTX){toast('Abra um projeto primeiro.');return;}AI_MODE='projeto';$('#aiSub').textContent=AI_CTX['Nome do projeto']||'Projeto';setAiChips('projeto');$('#aiOut').innerHTML='<div class="ai-hint">Escolha uma opção acima — a MarIA usa os dados do projeto aberto.</div>';$('#aiCopy').style.display='none';$('#aiInstr').value='';$('#aiOv').classList.add('on');}
 async function runAI(tarefa){if((tarefa==='documento'||tarefa==='perguntar')&&!(($('#aiInstr')||{}).value||'').trim()){toast('Escreva o pedido ou a pergunta no campo abaixo primeiro.');$('#aiInstr')&&$('#aiInstr').focus();return;}const out=$('#aiOut');out.innerHTML='<div class="ai-hint">MarIA está redigindo…</div>';$('#aiCopy').style.display='none';$('#aiPdf')&&($('#aiPdf').style.display='none');try{const {data,error}=await gov.functions.invoke('ai_assist',{body:{tarefa,projeto:AI_CTX,instrucao:$('#aiInstr').value.trim()}});if(error){out.innerHTML='<div class="ai-hint">Falha ao chamar a MarIA. Confirme se a chave da Anthropic foi configurada na função.</div>';return;}if(data&&data.error){out.innerHTML='<div class="ai-hint">'+esc(data.error)+'</div>';return;}window._aiTxt=(data&&data.texto)||'';out.innerHTML=window._aiTxt?md2html(window._aiTxt):'<div class="ai-hint">(sem resposta)</div>';if(window._aiTxt){$('#aiCopy').style.display='';if(AI_MODE==='governo')$('#aiPdf').style.display='';}}catch(e){out.innerHTML='<div class="ai-hint">Erro: '+esc(String(e))+'</div>';}}
 function toast(msg,type){const c=document.getElementById('toasts');const s=String(msg);if(!type){if(/sem permiss|n[ãa]o foi|falha|erro|inv[áa]lid|muito grande|informe |selecione |escolha |vincule /i.test(s))type='err';else if(/criad|enviad|registrad|gerad|atualizad|salvo|conclu/i.test(s))type='ok';else type='info';}if(!c){return;}const t=document.createElement('div');t.className='toast '+type;t.textContent=s;c.appendChild(t);requestAnimationFrame(()=>t.classList.add('show'));setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},4000);}
-function go(v){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');
+let MAPA=null,MAPA_LAYER=null,PJ_LAT=null,PJ_LNG=null,MINIMAP=null,MINIMARK=null;
+function statusCor(s){return ({no_prazo:'#1d9e75',concluido:'#0f6e56',em_atencao:'#d9932a',critico:'#d64545',nao_iniciado:'#2f74c0'})[s]||'#64748b';}
+async function ensureMapaObras(){
+  const el=$('#mapaObras');if(!el)return;
+  if(typeof L==='undefined'){el.innerHTML='<div class="empty" style="padding:30px">Mapa indisponível (biblioteca não carregou).</div>';return;}
+  if(!MAPA){MAPA=L.map('mapaObras').setView([-29.6846,-53.8069],12);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAPA);}
+  setTimeout(()=>MAPA.invalidateSize(),200);
+  await loadObrasMarkers();
+}
+async function loadObrasMarkers(){
+  if(!MAPA)return;
+  if(MAPA_LAYER)MAPA.removeLayer(MAPA_LAYER);
+  MAPA_LAYER=L.layerGroup().addTo(MAPA);
+  const {data,error}=await gov.from('projeto').select('id,codigo,nome,status,natureza,lat,lng,endereco,progresso_fisico,data_fim_prevista,secretaria:secretaria_id(sigla,nome)');
+  if(error){$('#obrasInfo').innerHTML='<span style="color:#d64545">Configure o Mapa: rode o script <b>banco/04_mapa_obras.sql</b> no Supabase (SQL Editor) e recarregue.</span>';return;}
+  const pts=(data||[]).filter(p=>p.lat!=null&&p.lng!=null),bounds=[];
+  pts.forEach(p=>{const c=statusCor(p.status);const m=L.circleMarker([p.lat,p.lng],{radius:9,color:'#fff',weight:2,fillColor:c,fillOpacity:.95});
+    m.bindPopup(`<div style="font-size:12.5px;line-height:1.5"><b>${esc(p.nome)}</b><br><span style="color:#64748b">${p.secretaria?.sigla||''} · ${SL[p.status]||p.status}</span><br>físico ${p.progresso_fisico||0}%${p.data_fim_prevista?' · prazo '+fmtd(p.data_fim_prevista):''}${p.endereco?'<br>'+esc(p.endereco):''}<br><a href="#" onclick="abrirFichaDoMapa('${p.id}');return false;" style="color:#4e2270;font-weight:700">Abrir ficha →</a></div>`);
+    m.addTo(MAPA_LAYER);bounds.push([p.lat,p.lng]);});
+  const semGeo=(data||[]).length-pts.length;
+  $('#obrasInfo').innerHTML=`${pts.length} obra(s) no mapa${semGeo?` · <b>${semGeo}</b> ainda sem localização (marque na Ficha ou no cadastro)`:''}`;
+  if(bounds.length)MAPA.fitBounds(bounds,{padding:[40,40],maxZoom:15});
+}
+window.abrirFichaDoMapa=function(id){openFichaProjeto(id);};
+function initMiniMap(){
+  if(typeof L==='undefined')return;const el=$('#pjMiniMap');if(!el)return;
+  if(!MINIMAP){MINIMAP=L.map('pjMiniMap').setView([-29.6846,-53.8069],12);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MINIMAP);MINIMAP.on('click',e=>setMiniPin(e.latlng.lat,e.latlng.lng));}
+  setTimeout(()=>MINIMAP.invalidateSize(),250);
+}
+function setMiniPin(lat,lng){PJ_LAT=lat;PJ_LNG=lng;if(MINIMARK)MINIMARK.setLatLng([lat,lng]);else MINIMARK=L.marker([lat,lng]).addTo(MINIMAP);if($('#pjCoord'))$('#pjCoord').textContent='Ponto marcado: '+lat.toFixed(5)+', '+lng.toFixed(5)+' — arraste o zoom e clique para ajustar.';}
+async function geocodePj(){
+  const q=(($('#pjEndereco')||{}).value||'').trim();if(!q){toast('Digite um endereço.');return;}
+  try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q+', Santa Maria, RS, Brasil'));const d=await r.json();
+    if(!d||!d.length){toast('Endereço não encontrado — marque clicando no mapa.');return;}
+    const la=parseFloat(d[0].lat),lo=parseFloat(d[0].lon);initMiniMap();MINIMAP.setView([la,lo],16);setMiniPin(la,lo);}
+  catch(e){toast('Falha ao localizar o endereço.');}
+}
+function go(v){document.querySelector('.side')?.classList.remove('open');$('#navBackdrop')?.classList.remove('on');document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('#v-'+v).classList.add('on');if(v==='mapaobras')ensureMapaObras();
   document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
   $('#crumb').innerHTML='<b>'+((document.querySelector('#nav a[data-v="'+v+'"]')?.textContent||v).trim().replace(/\s*\d+$/,''))+'</b>';if(v==='demandas'||v==='pautas')marcarVisto(v);window.scrollTo(0,0);}
 document.querySelectorAll("img[data-logo]").forEach(i=>i.src=LOGO);
